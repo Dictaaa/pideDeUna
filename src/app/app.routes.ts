@@ -10,12 +10,12 @@ export const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'restaurante-sua',
+    redirectTo: 'restaurante-suga',
     pathMatch: 'full',
   },
 
   {
     path: '**',
-    redirectTo: 'restaurante-sua',
+    redirectTo: 'restaurante-suga',
   },
 ];
