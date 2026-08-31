@@ -1,0 +1,12 @@
+<nav class="cat-nav">
+  @for (cat of categories(); track cat.id) {
+    <button
+      type="button"
+      class="cat-pill"
+      [class.active]="cat.id === activeId()"
+      (click)="select(cat.id)"
+    >
+      {{ cat.name }}
+    </button>
+  }
+</nav>

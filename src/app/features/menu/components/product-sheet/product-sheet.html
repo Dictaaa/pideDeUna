@@ -1,0 +1,79 @@
+<div class="sheet-overlay" [class.open]="isOpen()" (click)="close()"></div>
+
+<div class="sheet" [class.open]="isOpen()">
+  @if (product(); as p) {
+    <div class="sheet-img-wrap">
+      @if (thumbUrl()) {
+        <img class="sheet-img" [src]="thumbUrl()" [alt]="p.name" />
+      } @else {
+        <div class="sheet-img placeholder"></div>
+      }
+      <button type="button" class="sheet-close" (click)="close()">✕</button>
+    </div>
+
+    <div class="sheet-body">
+      <h2 class="sheet-title">{{ p.name }}</h2>
+      <p class="sheet-price">{{ +p.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+      @if (p.description) {
+        <p class="sheet-desc">{{ p.description }}</p>
+      }
+
+      @if (p.allergens.length || p.ingredients.length) {
+        <div class="tag-row">
+          @for (a of p.allergens; track a.id) {
+            <span class="tag allergen">⚠ {{ a.name }}</span>
+          }
+          @for (i of p.ingredients; track i.id) {
+            <span class="tag">{{ i.name }}</span>
+          }
+        </div>
+      }
+
+      @for (group of p.modifierGroups; track group.id) {
+        <div class="group">
+          <div class="group-head">
+            <h3>{{ group.name }}</h3>
+            <span class="group-hint">
+              {{ group.required ? 'Obligatorio' : 'Hasta ' + group.maxSelections }}
+            </span>
+          </div>
+          @for (opt of group.options; track opt.id) {
+            <div
+              class="option-row"
+              [class.selected]="isSelected(group.id, opt.id)"
+              (click)="toggleOption(group, opt)"
+            >
+              <div class="option-left">
+                <div [class]="group.maxSelections === 1 ? 'radio' : 'checkbox'">
+                  <div class="dot-fill"></div>
+                </div>
+                <span>{{ opt.name }}</span>
+              </div>
+              <span class="option-price">
+                @if (+opt.price > 0) {
+                  + {{ +opt.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                }
+              </span>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="qty-row">
+        <span class="qty-label">Cantidad</span>
+        <div class="stepper">
+          <button type="button" class="step-btn" (click)="decQty()">–</button>
+          <span class="qty-value">{{ quantity() }}</span>
+          <button type="button" class="step-btn" (click)="incQty()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet-footer">
+      <button type="button" class="add-cart-btn" (click)="confirmAdd($event)">
+        <span>Agregar al pedido</span>
+        <span>{{ grandTotal() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+      </button>
+    </div>
+  }
+</div>

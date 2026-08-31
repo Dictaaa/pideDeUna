@@ -1,0 +1,33 @@
+.cat-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 0 4px;
+}
+.cat-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-pill {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-soft);
+  padding: 8px 15px;
+  border-radius: 999px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cat-pill.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}

@@ -1,0 +1,5 @@
+export const environment = {
+  production: true,
+  apiUrl:     'http://localhost:4000/api/v1',
+  wompiPublicKey: 'pub_test_xxxxx',
+};

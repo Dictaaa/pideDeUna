@@ -1,0 +1,73 @@
+@if (loading()) {
+  <div class="state-message">Cargando menú…</div>
+} @else if (loadError()) {
+  <div class="state-message error">{{ loadError() }}</div>
+} @else {
+  @if (restaurant(); as r) {
+    <header class="top">
+      <div class="top-inner">
+        <div class="brand">
+          <div class="brand-mark">{{ r.name.charAt(0) }}</div>
+          <div class="brand-text">
+            <h1>{{ r.name }}</h1>
+            <p>Menú digital · PideDeUna</p>
+          </div>
+        </div>
+        @if (mesaToken) {
+          <div class="table-badge"><span class="dot"></span><span>Mesa</span></div>
+        }
+      </div>
+
+      <app-category-nav
+        class="cat-nav-host"
+        [categories]="categories()"
+        [activeId]="activeCategoryId()"
+        (categorySelected)="selectCategory($event)"
+      ></app-category-nav>
+    </header>
+
+    <main>
+      @for (cat of categories(); track cat.id) {
+        <section class="category-section" [id]="'cat-' + cat.id">
+          <div class="category-title">
+            <h2>{{ cat.name }}</h2>
+            <span class="count">{{ cat.products.length }} platos</span>
+          </div>
+
+          @for (product of cat.products; track product.id) {
+            <app-product-card
+              [product]="product"
+              (open)="openProductSheet($event)"
+              (quickAdd)="quickAdd($event)"
+            ></app-product-card>
+          }
+        </section>
+      }
+    </main>
+
+    <app-cart-bar
+      [count]="cart.count()"
+      [total]="cart.total()"
+      (opened)="cartDrawerOpen.set(true)"
+    ></app-cart-bar>
+
+    <app-product-sheet
+      [product]="openProduct()"
+      (closed)="closeProductSheet()"
+      (addedToCart)="onAddedFromSheet($event)"
+    ></app-product-sheet>
+
+    <app-cart-drawer
+      [isOpen]="cartDrawerOpen()"
+      [lines]="cart.lines()"
+      [total]="cart.total()"
+      (closed)="cartDrawerOpen.set(false)"
+      (removeLine)="cart.removeLine($event)"
+      (sendOrder)="sendOrder()"
+    ></app-cart-drawer>
+
+    @if (orderSentMessage(); as msg) {
+      <div class="toast show">{{ msg }}</div>
+    }
+  }
+}

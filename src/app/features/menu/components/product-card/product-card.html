@@ -1,0 +1,29 @@
+<div class="product-row" (click)="onRowClick()">
+  @if (thumbUrl()) {
+    <img class="product-thumb" [src]="thumbUrl()" [alt]="product().name" loading="lazy" />
+  } @else {
+    <div class="product-thumb placeholder"></div>
+  }
+
+  <div class="product-info">
+    <div class="product-name-row">
+      <p class="product-name">{{ product().name }}</p>
+      @if (product().isFeatured) {
+        <span class="badge-mini badge-featured">Recomendado</span>
+      }
+      @if (product().isRecommended) {
+        <span class="badge-mini badge-new">Nuevo</span>
+      }
+    </div>
+    @if (product().shortDescription || product().description) {
+      <p class="product-desc">{{ product().shortDescription ?? product().description }}</p>
+    }
+  </div>
+
+  <div class="leader">
+    <span class="price">{{ +product().price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+    <button type="button" class="add-btn" (click)="onAddClick($event)" [attr.aria-label]="'Agregar ' + product().name">
+      +
+    </button>
+  </div>
+</div>

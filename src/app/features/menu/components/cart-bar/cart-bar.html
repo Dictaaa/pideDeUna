@@ -1,0 +1,7 @@
+<div class="cart-bar" [class.visible]="count() > 0" (click)="opened.emit()">
+  <div class="cart-left">
+    <div class="cart-count">{{ count() }}</div>
+    <div class="cart-label">Ver pedido</div>
+  </div>
+  <div class="cart-total">{{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</div>
+</div>

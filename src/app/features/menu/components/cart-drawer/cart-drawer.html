@@ -1,0 +1,48 @@
+<div class="cart-drawer-overlay" [class.open]="isOpen()" (click)="closed.emit()"></div>
+
+<div class="cart-drawer" [class.open]="isOpen()">
+  <div class="cart-drawer-head">
+    <h2>Tu pedido</h2>
+    <button type="button" class="icon-btn" (click)="closed.emit()">✕</button>
+  </div>
+
+  <div class="cart-drawer-body">
+    @if (lines().length === 0) {
+      <div class="empty-cart">
+        Aún no has agregado platos.<br />
+        Toca un plato del menú para empezar.
+      </div>
+    } @else {
+      @for (line of lines(); track line.lineId) {
+        <div class="cart-line">
+          @if (line.imageUrl) {
+            <img [src]="line.imageUrl" [alt]="line.name" />
+          } @else {
+            <div class="cart-line-img placeholder"></div>
+          }
+          <div class="cart-line-info">
+            <div class="cart-line-name">{{ line.quantity }} × {{ line.name }}</div>
+            <div class="cart-line-meta">
+              {{ line.modifiers.length ? modifierNames(line) : 'Sin adiciones' }}
+            </div>
+          </div>
+          <div class="cart-line-price">
+            {{ line.unitPrice * line.quantity | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+          </div>
+          <button type="button" class="remove-btn" (click)="removeLine.emit(line.lineId)">✕</button>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="cart-drawer-foot">
+    <div class="cart-drawer-total">
+      <span>Total</span>
+      <span>{{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+    </div>
+    <button type="button" class="add-cart-btn" [disabled]="lines().length === 0" (click)="sendOrder.emit()">
+      <span>Enviar a cocina</span>
+      <span>{{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+    </button>
+  </div>
+</div>
