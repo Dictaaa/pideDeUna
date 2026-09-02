@@ -10,6 +10,9 @@ export interface Restaurant {
   coverUrl: string | null;
   city: string | null;
   currency: string;
+  primaryColor: string;
+  secondaryColor: string;
+  fontFamily: string;
 }
 
 export interface ProductMedia {

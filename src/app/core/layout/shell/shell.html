@@ -1,0 +1,16 @@
+<div class="shell">
+  <app-navbar
+    [restaurantName]="restaurant()?.name ?? ''"
+    [restaurantLogoUrl]="restaurant()?.logoUrl ?? null"
+    [userName]="userName"
+    (toggleSidebar)="toggleSidebar()"
+    (logout)="logout()"
+  ></app-navbar>
+
+  <div class="shell-body">
+    <app-sidebar [slug]="slug" [isOpen]="sidebarOpen()"></app-sidebar>
+    <main class="shell-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

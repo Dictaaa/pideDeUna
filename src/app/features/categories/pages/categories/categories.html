@@ -1,0 +1,98 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Categorías</h1>
+      <p>Organiza tu menú en secciones — Entradas, Bebidas, Postres…</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nueva categoría</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="4" [cols]="4"></app-table-skeleton>
+  } @else if (categories().length === 0) {
+    <div class="empty-state">Todavía no tienes categorías. Crea la primera.</div>
+  } @else {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Orden</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (cat of categories(); track cat.id) {
+          <tr>
+            <td class="cell-strong">{{ cat.name }}</td>
+            <td class="cell-muted">{{ cat.description || '—' }}</td>
+            <td>{{ cat.sortOrder }}</td>
+            <td>
+              <span class="badge" [class.badge-off]="!cat.isActive">
+                {{ cat.isActive ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+            <td class="cell-actions">
+              <button type="button" class="link-btn" (click)="openEdit(cat)">Editar</button>
+              <button type="button" class="link-btn danger" (click)="remove(cat)">Eliminar</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>{{ editingId() ? 'Editar categoría' : 'Nueva categoría' }}</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre</span>
+      <input type="text" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" name="name" />
+    </label>
+
+    <label class="field">
+      <span>Descripción</span>
+      <textarea
+        rows="2"
+        [ngModel]="form().description"
+        (ngModelChange)="updateField('description', $event)"
+        name="description"
+      ></textarea>
+    </label>
+
+    <label class="field">
+      <span>Orden</span>
+      <input
+        type="number"
+        [ngModel]="form().sortOrder"
+        (ngModelChange)="updateField('sortOrder', $event)"
+        name="sortOrder"
+      />
+    </label>
+
+    <label class="field field-checkbox">
+      <input
+        type="checkbox"
+        [ngModel]="form().isActive"
+        (ngModelChange)="updateField('isActive', $event)"
+        name="isActive"
+      />
+      <span>Categoría activa (visible en el menú)</span>
+    </label>
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
+}

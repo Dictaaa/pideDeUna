@@ -13,6 +13,8 @@
   --secondary: #ffc02e;
   --primary-ink: #7a3a00;
 
+  --success: #187a00;
+
   --bg: #ffffff;
   --surface: #fafafa;
   --ink: #1c1c1c;
@@ -36,7 +38,7 @@ body {
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--line);
   color: var(--ink);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;

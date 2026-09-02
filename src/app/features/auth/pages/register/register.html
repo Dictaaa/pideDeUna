@@ -1,0 +1,92 @@
+<div class="auth-page">
+  <form class="auth-card" (ngSubmit)="submit()">
+    <div class="auth-brand-mark">P</div>
+    <h1>Registra tu restaurante</h1>
+    <p class="auth-sub">Crea tu cuenta y empieza gratis — sin tarjeta.</p>
+
+    @if (errorMessage(); as msg) {
+      <div class="auth-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre del restaurante</span>
+      <input
+        type="text"
+        placeholder="Restaurante Sua"
+        [ngModel]="restaurantName()"
+        (ngModelChange)="onRestaurantNameChange($event)"
+        name="restaurantName"
+      />
+    </label>
+
+    <label class="field">
+      <span>Tu URL en PideDeUna</span>
+      <div class="slug-input">
+        <span class="slug-prefix">pidedeuna.com/</span>
+        <input
+          type="text"
+          [ngModel]="slug()"
+          (ngModelChange)="onSlugChange($event)"
+          name="slug"
+        />
+      </div>
+    </label>
+
+    <label class="field">
+      <span>Tu nombre</span>
+      <input
+        type="text"
+        placeholder="María Pérez"
+        [ngModel]="adminName()"
+        (ngModelChange)="adminName.set($event)"
+        name="adminName"
+        autocomplete="name"
+      />
+    </label>
+
+    <label class="field">
+      <span>Email</span>
+      <input
+        type="email"
+        placeholder="tu@turestaurante.co"
+        [ngModel]="adminEmail()"
+        (ngModelChange)="adminEmail.set($event)"
+        name="adminEmail"
+        autocomplete="email"
+      />
+    </label>
+
+    <label class="field">
+      <span>Contraseña</span>
+      <input
+        type="password"
+        placeholder="Mínimo 8 caracteres"
+        [ngModel]="adminPassword()"
+        (ngModelChange)="adminPassword.set($event)"
+        name="adminPassword"
+        autocomplete="new-password"
+      />
+    </label>
+
+    <label class="field">
+      <span>Logo (opcional)</span>
+      <div class="logo-upload">
+        @if (logoPreviewUrl()) {
+          <img class="logo-preview" [src]="logoPreviewUrl()" alt="" />
+        } @else {
+          <div class="logo-preview logo-preview-empty">{{ restaurantName().charAt(0) || 'P' }}</div>
+        }
+        <label class="logo-upload-btn">
+          {{ logoFile() ? 'Cambiar imagen' : 'Subir imagen' }}
+          <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onLogoSelected($event)" hidden />
+        </label>
+      </div>
+    </label>
+
+    <button type="submit" class="auth-submit" [disabled]="loading()">
+      {{ loading() ? 'Creando tu cuenta…' : 'Crear mi restaurante' }}
+    </button>
+
+    <p class="auth-switch">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+  </form>
+</div>

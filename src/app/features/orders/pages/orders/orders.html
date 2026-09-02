@@ -1,0 +1,167 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Pedidos</h1>
+      <p>Los pedidos activos de tus mesas, en tiempo real.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nuevo pedido</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="4" [cols]="4"></app-table-skeleton>
+  } @else if (orders().length === 0) {
+    <div class="empty-state">No hay pedidos activos ahora mismo.</div>
+  } @else {
+    <div class="orders-grid">
+      @for (order of orders(); track order.id) {
+        <button type="button" class="order-card" [class]="'status-' + order.status" (click)="openOrder(order)">
+          <div class="order-card-head">
+            <span class="order-number">#{{ order.orderNumber }}</span>
+            <span class="badge status-badge">{{ statusLabel(order.status) }}</span>
+          </div>
+          <div class="order-table">Mesa {{ order.table?.tableNumber }}</div>
+          @if (order.customerName) {
+            <div class="order-customer">{{ order.customerName }}</div>
+          }
+          <div class="order-items-summary">
+            {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
+          </div>
+          <div class="order-card-foot">
+            <span class="order-total">{{ '$' + (+order.total | number: '1.0-0') }}</span>
+            <span class="order-time">{{ timeAgo(order.createdAt) }}</span>
+          </div>
+        </button>
+      }
+    </div>
+  }
+</div>
+
+@if (panelOpen()) {
+  <div class="overlay" (click)="closePanel()"></div>
+  <div class="panel">
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    @if (panelMode() === 'create') {
+      <h2>Nuevo pedido</h2>
+
+      <label class="field">
+        <span>Mesa</span>
+        <select [ngModel]="selectedTableId()" (ngModelChange)="selectedTableId.set($event)" name="tableId">
+          @for (t of tables(); track t.id) {
+            <option [value]="t.id">{{ t.name || ('Mesa ' + t.tableNumber) }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Nombre del cliente (opcional)</span>
+        <input type="text" [ngModel]="customerName()" (ngModelChange)="customerName.set($event)" name="customerName" />
+      </label>
+
+      @if (draftItems().length > 0) {
+        <div class="draft-list">
+          @for (item of draftItems(); track item.productId) {
+            <div class="draft-row">
+              <span class="draft-name">{{ item.name }}</span>
+              <div class="draft-qty">
+                <button type="button" class="step-btn" (click)="decrementDraft(item)">–</button>
+                <span>{{ item.quantity }}</span>
+              </div>
+              <span class="draft-price">{{ '$' + (item.unitPrice * item.quantity | number: '1.0-0') }}</span>
+            </div>
+          }
+        </div>
+        <div class="draft-total">Total: {{ '$' + (draftTotal() | number: '1.0-0') }}</div>
+      }
+
+      <div class="picker">
+        <div class="picker-tabs">
+          @for (cat of categories(); track cat.id) {
+            <button
+              type="button"
+              class="picker-tab"
+              [class.active]="cat.id === pickerCategoryId()"
+              (click)="pickerCategoryId.set(cat.id)"
+            >
+              {{ cat.name }}
+            </button>
+          }
+        </div>
+        <div class="picker-list">
+          @for (product of productsInPickerCategory(); track product.id) {
+            <button type="button" class="picker-item" (click)="addDraftProduct(product)">
+              <span>{{ product.name }}</span>
+              <span class="picker-price">{{ '$' + (+product.price | number: '1.0-0') }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="panel-actions">
+        <button type="button" class="btn-secondary" (click)="closePanel()">Cancelar</button>
+        <button type="button" class="btn-primary" [disabled]="saving()" (click)="submitCreate($event)">
+          {{ saving() ? 'Creando…' : 'Crear pedido' }}
+        </button>
+      </div>
+    } @else if (activeOrder()) {
+      @if (activeOrder(); as order) {
+      <h2>Pedido #{{ order.orderNumber }}</h2>
+      <p class="panel-sub">
+        Mesa {{ order.table?.tableNumber }}
+        @if (order.customerName) {
+          · {{ order.customerName }}
+        }
+        · <span class="badge">{{ statusLabel(order.status) }}</span>
+      </p>
+
+      <div class="draft-list">
+        @for (item of order.items; track item.id) {
+          <div class="draft-row">
+            <span class="draft-name">{{ item.quantity }} × {{ item.productName }}</span>
+            <span class="draft-price">{{ '$' + (+item.subtotal | number: '1.0-0') }}</span>
+            <button type="button" class="link-btn danger" (click)="removeOrderItem(item)">Quitar</button>
+          </div>
+        }
+      </div>
+      <div class="draft-total">Total: {{ '$' + (+order.total | number: '1.0-0') }}</div>
+
+      <div class="picker">
+        <div class="picker-tabs">
+          @for (cat of categories(); track cat.id) {
+            <button
+              type="button"
+              class="picker-tab"
+              [class.active]="cat.id === pickerCategoryId()"
+              (click)="pickerCategoryId.set(cat.id)"
+            >
+              {{ cat.name }}
+            </button>
+          }
+        </div>
+        <div class="picker-list">
+          @for (product of productsInPickerCategory(); track product.id) {
+            <button type="button" class="picker-item" (click)="addProductToActiveOrder(product)">
+              <span>{{ product.name }}</span>
+              <span class="picker-price">{{ '$' + (+product.price | number: '1.0-0') }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="panel-actions panel-actions-spread">
+        <button type="button" class="link-btn danger" (click)="cancelOrder(order)">Cancelar pedido</button>
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="order.status !== 'READY'"
+          (click)="serveOrder(order)"
+        >
+          {{ order.status === 'READY' ? 'Marcar como entregado' : 'Esperando a cocina…' }}
+        </button>
+      </div>
+      }
+    }
+  </div>
+}

@@ -1,6 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, input, output } from '@angular/core';
-import { CartLine } from '../../../../core/models/menu.models';
+import { CartLine } from '../../../../core/models/menu';
 
 @Component({
   selector: 'app-cart-drawer',

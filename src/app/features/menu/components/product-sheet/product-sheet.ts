@@ -1,6 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
-import { ModifierGroup, ModifierOption, Product, SelectedModifier } from '../../../../core/models/menu.models';
+import { ModifierGroup, ModifierOption, Product, SelectedModifier } from '../../../../core/models/menu';
 import { FoodBurstService } from '../../../../shared/services/food-burst';
 
 @Component({

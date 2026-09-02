@@ -1,5 +1,5 @@
 import { Component, input, output } from '@angular/core';
-import { MenuCategory } from '../../../../core/models/menu.models';
+import { MenuCategory } from '../../../../core/models/menu';
 
 @Component({
   selector: 'app-category-nav',

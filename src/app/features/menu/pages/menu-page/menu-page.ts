@@ -1,33 +1,29 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
-import { ApiService } from '../../../../core/services/api';
-import { CartService } from '../../services/cart';
-import { MenuCategory, Product, Restaurant, SelectedModifier } from '../../../../core/models/menu.models';
+import { Menu } from '../../services/menu';
+import { Cart } from '../../services/cart';
+import { MenuCategory, Product, Restaurant, SelectedModifier } from '../../../../core/models/menu';
 
 import { CategoryNav } from '../../components/category-nav/category-nav';
 import { ProductCard } from '../../components/product-card/product-card';
 import { ProductSheet } from '../../components/product-sheet/product-sheet';
 import { CartBar } from '../../components/cart-bar/cart-bar';
 import { CartDrawer } from '../../components/cart-drawer/cart-drawer';
+import { Skeleton } from '../../../../shared/components/skeleton/skeleton';
+import { applyMenuFont } from '../../../../shared/utils/menu-fonts';
 
 @Component({
   selector: 'app-menu-page',
   standalone: true,
-  imports: [
-    CategoryNav,
-    ProductCard,
-    ProductSheet,
-    CartBar,
-    CartDrawer,
-  ],
+  imports: [CategoryNav, ProductCard, ProductSheet, CartBar, CartDrawer, Skeleton],
   templateUrl: './menu-page.html',
   styleUrl: './menu-page.scss',
 })
 export class MenuPage {
   private route = inject(ActivatedRoute);
-  private api = inject(ApiService);
-  cart = inject(CartService);
+  private menuService = inject(Menu);
+  cart = inject(Cart);
 
   slug = this.route.snapshot.paramMap.get('slug')!;
   /** Token del QR de la mesa, si se entró por pidedeuna.com/:slug/mesa/:token */
@@ -46,12 +42,18 @@ export class MenuPage {
   totalProducts = computed(() => this.categories().reduce((n, c) => n + c.products.length, 0));
 
   constructor() {
-    this.api.getMenuBySlug(this.slug).subscribe({
+    this.menuService.getBySlug(this.slug).subscribe({
       next: (res) => {
         this.restaurant.set(res.restaurant);
         this.categories.set(res.categories);
         this.activeCategoryId.set(res.categories[0]?.id ?? null);
         this.loading.set(false);
+
+        // Este era el bug: el admin sí guardaba el color/fuente, pero
+        // esta página (la que ve el cliente) nunca los aplicaba.
+        document.documentElement.style.setProperty('--primary', res.restaurant.primaryColor);
+        document.documentElement.style.setProperty('--secondary', res.restaurant.secondaryColor);
+        applyMenuFont(res.restaurant.fontFamily);
       },
       error: () => {
         this.loadError.set('No pudimos cargar el menú de esta tienda. Intenta de nuevo.');

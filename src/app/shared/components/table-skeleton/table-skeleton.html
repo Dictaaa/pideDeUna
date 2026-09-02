@@ -1,0 +1,9 @@
+<div class="table-skeleton">
+  @for (row of rowsArray(); track $index) {
+    <div class="row">
+      @for (col of colsArray(); track $index) {
+        <app-skeleton [width]="$index === 0 ? '70%' : '50%'" height="12px"></app-skeleton>
+      }
+    </div>
+  }
+</div>

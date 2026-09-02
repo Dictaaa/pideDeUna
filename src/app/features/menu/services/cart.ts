@@ -1,8 +1,8 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { CartLine, Product, SelectedModifier } from '../../../core/models/menu.models';
+import { CartLine, Product, SelectedModifier } from '../../../core/models/menu';
 
 @Injectable({ providedIn: 'root' })
-export class CartService {
+export class Cart {
   private readonly _lines = signal<CartLine[]>([]);
 
   /** Solo lectura hacia afuera — todo cambio pasa por los métodos de este servicio. */

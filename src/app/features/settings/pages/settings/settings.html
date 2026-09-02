@@ -1,0 +1,120 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Configuración</h1>
+      <p>Cómo se comporta tu menú de cara al cliente, y los colores de tu marca.</p>
+    </div>
+  </div>
+
+  @if (errorMessage(); as msg) {
+    <div class="form-error page-error">{{ msg }}</div>
+  }
+
+  @if (loading()) {
+    <div class="section">
+      <app-skeleton width="90px" height="13px"></app-skeleton>
+      <div class="skeleton-gap"></div>
+      <div class="color-row">
+        <app-skeleton width="64px" height="36px" radius="8px"></app-skeleton>
+        <app-skeleton width="64px" height="36px" radius="8px"></app-skeleton>
+      </div>
+      <app-skeleton width="130px" height="34px" radius="8px"></app-skeleton>
+    </div>
+    <div class="section">
+      <app-skeleton width="150px" height="13px"></app-skeleton>
+      <div class="skeleton-gap"></div>
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="skeleton-toggle-row">
+          <app-skeleton width="18px" height="18px" radius="4px"></app-skeleton>
+          <app-skeleton width="60%" height="12px"></app-skeleton>
+        </div>
+      }
+    </div>
+  } @else {
+    <section class="section">
+      <h2>Marca</h2>
+      <p class="section-sub">El logo, el color y la tipografía con la que se ve tu menú.</p>
+
+      @if (logoError(); as lErr) {
+        <div class="form-error" style="margin-bottom: 14px;">{{ lErr }}</div>
+      }
+
+      <div class="logo-row">
+        @if (restaurant()?.logoUrl) {
+          <img class="logo-current" [src]="restaurant()!.logoUrl" alt="" />
+        } @else {
+          <div class="logo-current logo-current-empty">{{ restaurant()?.name?.charAt(0) || 'P' }}</div>
+        }
+        <label class="btn-secondary logo-upload-btn">
+          {{ uploadingLogo() ? 'Subiendo…' : 'Cambiar logo' }}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            (change)="onLogoSelected($event)"
+            [disabled]="uploadingLogo()"
+            hidden
+          />
+        </label>
+      </div>
+
+      <div class="color-row">
+        <label class="color-field">
+          <span>Primario</span>
+          <input type="color" [ngModel]="primaryColor()" (ngModelChange)="primaryColor.set($event)" name="primaryColor" />
+        </label>
+        <label class="color-field">
+          <span>Secundario</span>
+          <input
+            type="color"
+            [ngModel]="secondaryColor()"
+            (ngModelChange)="secondaryColor.set($event)"
+            name="secondaryColor"
+          />
+        </label>
+      </div>
+
+      <label class="field font-field">
+        <span>Tipografía del menú (nombre y descripción de cada plato)</span>
+        <select [ngModel]="fontFamily()" (ngModelChange)="onFontChange($event)" name="fontFamily">
+          @for (opt of fontOptions; track opt.id) {
+            <option [value]="opt.id">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+
+      <p class="font-preview">
+        <span [style.fontFamily]="currentFontStack()">
+          Hamburguesa Sua — carne 200g, queso madurado y salsa de la casa
+        </span>
+      </p>
+
+      <button type="button" class="btn-primary" [disabled]="savingBranding()" (click)="saveBranding()">
+        {{ savingBranding() ? 'Guardando…' : brandingSaved() ? '¡Guardado!' : 'Guardar marca' }}
+      </button>
+    </section>
+
+    @if (settings(); as s) {
+      <section class="section">
+        <h2>Configuración operativa</h2>
+        <p class="section-sub">Qué puede hacer un cliente desde el QR de la mesa.</p>
+
+        <div class="toggle-list">
+          @for (t of toggles; track t.key) {
+            <label class="toggle-row">
+              <input
+                type="checkbox"
+                [checked]="toggleValue(t.key)"
+                (change)="setToggle(t.key, $any($event.target).checked)"
+              />
+              <span>{{ t.label }}</span>
+            </label>
+          }
+        </div>
+
+        <button type="button" class="btn-primary" [disabled]="savingSettings()" (click)="saveSettings()">
+          {{ savingSettings() ? 'Guardando…' : settingsSaved() ? '¡Guardado!' : 'Guardar configuración' }}
+        </button>
+      </section>
+    }
+  }
+</div>

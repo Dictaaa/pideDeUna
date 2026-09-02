@@ -1,0 +1,41 @@
+<div class="auth-page">
+  <form class="auth-card" (ngSubmit)="submit()">
+    <div class="auth-brand-mark">P</div>
+    <h1>Entrar a tu panel</h1>
+    <p class="auth-sub">Administra el menú y la operación de tu restaurante.</p>
+
+    @if (errorMessage(); as msg) {
+      <div class="auth-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Email</span>
+      <input
+        type="email"
+        placeholder="admin@turestaurante.co"
+        [ngModel]="email()"
+        (ngModelChange)="email.set($event)"
+        name="email"
+        autocomplete="username"
+      />
+    </label>
+
+    <label class="field">
+      <span>Contraseña</span>
+      <input
+        type="password"
+        placeholder="••••••••"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+        name="password"
+        autocomplete="current-password"
+      />
+    </label>
+
+    <button type="submit" class="auth-submit" [disabled]="loading()">
+      {{ loading() ? 'Entrando…' : 'Entrar' }}
+    </button>
+
+    <p class="auth-switch">¿No tienes cuenta? <a routerLink="/register">Registra tu restaurante</a></p>
+  </form>
+</div>

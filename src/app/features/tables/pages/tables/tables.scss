@@ -1,0 +1,7 @@
+@use '../../../../shared/styles/admin-page' as *;
+
+.cell-qr {
+  display: flex;
+  gap: 12px;
+  white-space: nowrap;
+}

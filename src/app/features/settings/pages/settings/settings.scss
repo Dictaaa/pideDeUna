@@ -1,0 +1,132 @@
+@use '../../../../shared/styles/admin-page' as *;
+
+.page-error {
+  margin-bottom: 20px;
+}
+
+.section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+
+  h2 {
+    font-size: 15px;
+    margin: 0 0 3px;
+    font-weight: 700;
+  }
+}
+
+.section-sub {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.color-row {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  input[type='color'] {
+    width: 64px;
+    height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 2px;
+    cursor: pointer;
+    background: none;
+  }
+}
+
+.toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  input {
+    width: auto;
+  }
+}
+
+.skeleton-gap {
+  height: 14px;
+}
+.skeleton-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.logo-current {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.logo-current-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--ink-faint);
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.logo-upload-btn {
+  display: inline-flex;
+}
+
+.font-field {
+  margin-top: 18px;
+  margin-bottom: 10px;
+}
+
+.font-preview {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+}

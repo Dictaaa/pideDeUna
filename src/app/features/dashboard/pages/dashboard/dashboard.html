@@ -1,0 +1,99 @@
+<div class="dashboard">
+  <div class="dashboard-head">
+    <div>
+      <h1>Hola, {{ userName }}</h1>
+      <p>El pulso de tu restaurante.</p>
+    </div>
+    <div class="period-tabs">
+      @for (p of periods; track p) {
+        <button
+          type="button"
+          class="period-tab"
+          [class.active]="p === selectedPeriod()"
+          (click)="selectPeriod(p)"
+        >
+          {{ periodLabel(p) }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi-card">
+          <app-skeleton width="70px" height="26px" radius="6px"></app-skeleton>
+          <app-skeleton width="80%" height="11px"></app-skeleton>
+        </div>
+      }
+    </div>
+    <div class="chart-card">
+      <app-skeleton width="140px" height="13px"></app-skeleton>
+      <div class="chart-skeleton-bars">
+        @for (i of [1, 2, 3, 4, 5, 6, 7]; track i) {
+          <app-skeleton width="100%" height="120px" radius="6px 6px 0 0"></app-skeleton>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-value">{{ summary()?.ordersCount ?? 0 }}</span>
+        <span class="kpi-label">Pedidos completados</span>
+      </div>
+      <div class="kpi-card highlight">
+        <span class="kpi-value">{{ money(summary()?.revenue ?? 0) }}</span>
+        <span class="kpi-label">Ventas totales</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-value">{{ money(summary()?.avgTicket ?? 0) }}</span>
+        <span class="kpi-label">Ticket promedio</span>
+      </div>
+      <div class="kpi-card muted">
+        <span class="kpi-value">{{ summary()?.cancelledCount ?? 0 }}</span>
+        <span class="kpi-label">Pedidos cancelados</span>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="chart-card">
+        <h2>Ventas por {{ groupBy() === 'month' ? 'mes' : 'día' }}</h2>
+        @if (timeseries().length === 0) {
+          <div class="empty-note">No hay ventas registradas en este período.</div>
+        } @else {
+          <div class="chart-bars">
+            @for (point of timeseries(); track point.bucket) {
+              <div class="chart-col">
+                <div class="chart-bar-track">
+                  <div class="chart-bar" [style.height.%]="barHeightPct(point)" [title]="money(point.revenue)"></div>
+                </div>
+                <span class="chart-label">{{ bucketLabel(point.bucket) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="top-products-card">
+        <h2>Más vendidos</h2>
+        @if (topProducts().length === 0) {
+          <div class="empty-note">Todavía no hay ventas para mostrar.</div>
+        } @else {
+          <ol class="top-products-list">
+            @for (p of topProducts(); track p.productName) {
+              <li>
+                <span class="top-product-name">{{ p.productName }}</span>
+                <span class="top-product-qty">{{ p.quantitySold }} u.</span>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    </div>
+
+    <p class="disclaimer">
+      "Ventas" son los pedidos entregados en este período (no incluye cancelados). Todavía no calculamos
+      ganancia neta (costo de cada producto) — solo ingresos.
+    </p>
+  }
+</div>

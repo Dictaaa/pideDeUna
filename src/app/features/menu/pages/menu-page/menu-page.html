@@ -1,5 +1,32 @@
 @if (loading()) {
-  <div class="state-message">Cargando menú…</div>
+  <div class="menu-skeleton">
+    <header class="skeleton-top">
+      <div class="skeleton-brand">
+        <app-skeleton width="34px" height="34px" [circle]="true"></app-skeleton>
+        <div class="skeleton-brand-text">
+          <app-skeleton width="120px" height="14px"></app-skeleton>
+          <app-skeleton width="80px" height="10px"></app-skeleton>
+        </div>
+      </div>
+      <div class="skeleton-pills">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <app-skeleton width="70px" height="30px" radius="999px"></app-skeleton>
+        }
+      </div>
+    </header>
+    <main class="skeleton-main">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="skeleton-row">
+          <app-skeleton width="60px" height="60px" radius="14px"></app-skeleton>
+          <div class="skeleton-row-text">
+            <app-skeleton width="55%" height="13px"></app-skeleton>
+            <app-skeleton width="80%" height="11px"></app-skeleton>
+          </div>
+          <app-skeleton width="46px" height="13px"></app-skeleton>
+        </div>
+      }
+    </main>
+  </div>
 } @else if (loadError()) {
   <div class="state-message error">{{ loadError() }}</div>
 } @else {
@@ -7,12 +34,15 @@
     <header class="top">
       <div class="top-inner">
         <div class="brand">
-          <div class="brand-mark">{{ r.name.charAt(0) }}</div>
-          <div class="brand-text">
-            <h1>{{ r.name }}</h1>
-            <p>Menú digital · PideDeUna</p>
-          </div>
-        </div>
+  @if (r.logoUrl) {
+    <img class="brand-logo" [src]="r.logoUrl" alt="" />
+  } @else {
+    <div class="brand-mark">{{ r.name.charAt(0) }}</div>
+  }
+  <div class="brand-text">
+    <h1>{{ r.name }}</h1>
+  </div>
+</div>
         @if (mesaToken) {
           <div class="table-badge"><span class="dot"></span><span>Mesa</span></div>
         }

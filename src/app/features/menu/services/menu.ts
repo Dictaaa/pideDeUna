@@ -1,42 +1,15 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { CartLine, Product, SelectedModifier } from '../../../core/models/menu.models';
+import { Injectable, inject } from '@angular/core';
+import { Api } from '../../../core/services/api';
+import { API } from '../../../core/services/api.endpoints';
+import { RestaurantMenuResponse } from '../../../core/models/menu';
 
+/** Todo lo relacionado a leer/administrar el menú de un restaurante. */
 @Injectable({ providedIn: 'root' })
-export class CartService {
-  private readonly _lines = signal<CartLine[]>([]);
+export class Menu {
+  private api = inject(Api);
 
-  /** Solo lectura hacia afuera — todo cambio pasa por los métodos de este servicio. */
-  readonly lines = this._lines.asReadonly();
-
-  readonly count = computed(() =>
-    this._lines().reduce((sum, l) => sum + l.quantity, 0)
-  );
-
-  readonly total = computed(() =>
-    this._lines().reduce((sum, l) => sum + l.unitPrice * l.quantity, 0)
-  );
-
-  readonly isEmpty = computed(() => this._lines().length === 0);
-
-  add(product: Product, modifiers: SelectedModifier[], quantity: number): void {
-    const unitExtra = modifiers.reduce((sum, m) => sum + m.price, 0);
-    const line: CartLine = {
-      lineId: crypto.randomUUID(),
-      productId: product.id,
-      name: product.name,
-      imageUrl: product.imageUrl ?? product.media?.[0]?.url ?? null,
-      unitPrice: Number(product.price) + unitExtra,
-      quantity,
-      modifiers,
-    };
-    this._lines.update((lines) => [...lines, line]);
-  }
-
-  removeLine(lineId: string): void {
-    this._lines.update((lines) => lines.filter((l) => l.lineId !== lineId));
-  }
-
-  clear(): void {
-    this._lines.set([]);
+  /** GET /api/restaurantes/:slug/menu — vista pública, la que consume el cliente en la mesa. */
+  getBySlug(slug: string) {
+    return this.api.get<RestaurantMenuResponse>(API.RESTAURANT.MENU(slug));
   }
 }

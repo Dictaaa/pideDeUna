@@ -1,0 +1,27 @@
+@use '../../../../shared/styles/admin-page' as *;
+
+.cell-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.roles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.role-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+
+  input {
+    width: auto;
+  }
+}

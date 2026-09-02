@@ -1,0 +1,18 @@
+<header class="navbar">
+  <div class="navbar-brand">
+    <button type="button" class="sidebar-toggle" (click)="toggleSidebar.emit()" aria-label="Mostrar/ocultar menú">
+      <span></span><span></span><span></span>
+    </button>
+    @if (restaurantLogoUrl()) {
+      <img class="brand-logo" [src]="restaurantLogoUrl()" alt="" />
+    } @else {
+      <div class="brand-mark">{{ restaurantName().charAt(0) || 'P' }}</div>
+    }
+    <span class="brand-name">{{ restaurantName() || 'PideDeUna' }}</span>
+  </div>
+
+  <div class="navbar-user">
+    <span class="user-name">{{ userName() }}</span>
+    <button type="button" class="logout-btn" (click)="logout.emit()">Cerrar sesión</button>
+  </div>
+</header>

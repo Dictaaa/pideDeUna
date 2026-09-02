@@ -1,0 +1,171 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Productos</h1>
+      <p>Los platos y bebidas de tu menú.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nuevo producto</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="5" [cols]="4"></app-table-skeleton>
+  } @else if (products().length === 0) {
+    <div class="empty-state">Todavía no tienes productos. Crea el primero.</div>
+  } @else {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of products(); track p.id) {
+          <tr>
+            <td class="cell-strong">
+              {{ p.name }}
+              @if (p.isFeatured) {
+                <span class="badge">Recomendado</span>
+              }
+            </td>
+            <td class="cell-muted">{{ categoryName(p.categoryId) }}</td>
+            <td>{{ '$' + (+p.price | number: '1.0-0') }}</td>
+            <td>
+              <span class="badge" [class.badge-off]="!p.isAvailable">
+                {{ p.isAvailable ? 'Disponible' : 'Pausado' }}
+              </span>
+            </td>
+            <td class="cell-actions">
+              <button type="button" class="link-btn" (click)="openEdit(p)">Editar</button>
+              <button type="button" class="link-btn danger" (click)="remove(p)">Eliminar</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>{{ editingId() ? 'Editar producto' : 'Nuevo producto' }}</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre</span>
+      <input type="text" [ngModel]="form().name" (ngModelChange)="onNameChange($event)" name="name" />
+    </label>
+
+    <label class="field">
+      <span>Slug (URL)</span>
+      <input type="text" [ngModel]="form().slug" (ngModelChange)="onSlugChange($event)" name="slug" />
+    </label>
+
+    <label class="field">
+      <span>Categoría</span>
+      <select [ngModel]="form().categoryId" (ngModelChange)="updateField('categoryId', $event)" name="categoryId">
+        <option value="">Sin categoría</option>
+        @for (cat of categories(); track cat.id) {
+          <option [value]="cat.id">{{ cat.name }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Descripción</span>
+      <textarea
+        rows="2"
+        [ngModel]="form().description"
+        (ngModelChange)="updateField('description', $event)"
+        name="description"
+      ></textarea>
+    </label>
+
+    <label class="field">
+      <span>Precio (COP)</span>
+      <input
+        type="number"
+        min="0"
+        [ngModel]="form().price"
+        (ngModelChange)="updateField('price', $event)"
+        name="price"
+      />
+    </label>
+
+    <label class="field field-checkbox">
+      <input
+        type="checkbox"
+        [ngModel]="form().isAvailable"
+        (ngModelChange)="updateField('isAvailable', $event)"
+        name="isAvailable"
+      />
+      <span>Disponible en el menú</span>
+    </label>
+
+    <label class="field field-checkbox">
+      <input
+        type="checkbox"
+        [ngModel]="form().isFeatured"
+        (ngModelChange)="updateField('isFeatured', $event)"
+        name="isFeatured"
+      />
+      <span>Marcar como recomendado</span>
+    </label>
+
+    @if (editingId()) {
+      <div class="field media-field">
+        <span>Fotos y video</span>
+
+        @if (mediaError(); as mErr) {
+          <div class="form-error">{{ mErr }}</div>
+        }
+
+        @if (currentMedia().length > 0) {
+          <div class="media-grid">
+            @for (m of currentMedia(); track m.id) {
+              <div class="media-item">
+                @if (m.mediaType === 'IMAGE') {
+                  <img [src]="m.url" alt="" />
+                } @else {
+                  <video [src]="m.url" muted></video>
+                  <span class="media-type-badge">Video</span>
+                }
+                @if (m.isPrimary) {
+                  <span class="media-primary-badge">Principal</span>
+                }
+                <button type="button" class="media-remove" (click)="removeMedia(m)">✕</button>
+              </div>
+            }
+          </div>
+        }
+
+        <label class="upload-btn">
+          {{ uploadingMedia() ? 'Subiendo…' : '+ Agregar foto o video' }}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+            (change)="onMediaSelected($event)"
+            [disabled]="uploadingMedia()"
+            hidden
+          />
+        </label>
+      </div>
+    } @else {
+      <p class="media-hint">Guarda el producto primero para poder agregarle fotos o video.</p>
+    }
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
+}

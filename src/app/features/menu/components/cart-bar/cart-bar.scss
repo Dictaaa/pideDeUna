@@ -6,8 +6,9 @@
   z-index: 50;
   max-width: 680px;
   margin: 0 auto;
-  background: var(--ink);
-  color: #fff;
+  background: var(--bg);
+  box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.1);
+  color: #000;
   border-radius: var(--radius-lg);
   padding: 13px 17px;
   display: flex;
@@ -31,7 +32,7 @@
   height: 24px;
   border-radius: 7px;
   background: var(--secondary);
-  color: var(--primary-ink);
+  color: var(--bg);
   font-size: 12px;
   font-weight: 800;
   display: flex;

@@ -1,0 +1,98 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Áreas</h1>
+      <p>Zonas físicas del restaurante — Salón, Terraza, Bar, VIP…</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nueva área</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="3" [cols]="4"></app-table-skeleton>
+  } @else if (areas().length === 0) {
+    <div class="empty-state">Todavía no tienes áreas. Crea la primera.</div>
+  } @else {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Orden</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (area of areas(); track area.id) {
+          <tr>
+            <td class="cell-strong">{{ area.name }}</td>
+            <td class="cell-muted">{{ area.description || '—' }}</td>
+            <td>{{ area.sortOrder }}</td>
+            <td>
+              <span class="badge" [class.badge-off]="area.status !== 'active'">
+                {{ area.status === 'active' ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+            <td class="cell-actions">
+              <button type="button" class="link-btn" (click)="openEdit(area)">Editar</button>
+              <button type="button" class="link-btn danger" (click)="remove(area)">Eliminar</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>{{ editingId() ? 'Editar área' : 'Nueva área' }}</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre</span>
+      <input type="text" placeholder="Ej: Terraza" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" name="name" />
+    </label>
+
+    <label class="field">
+      <span>Descripción</span>
+      <textarea
+        rows="2"
+        [ngModel]="form().description"
+        (ngModelChange)="updateField('description', $event)"
+        name="description"
+      ></textarea>
+    </label>
+
+    <label class="field">
+      <span>Orden</span>
+      <input
+        type="number"
+        [ngModel]="form().sortOrder"
+        (ngModelChange)="updateField('sortOrder', $event)"
+        name="sortOrder"
+      />
+    </label>
+
+    @if (editingId()) {
+      <label class="field">
+        <span>Estado</span>
+        <select [ngModel]="form().status" (ngModelChange)="updateField('status', $event)" name="status">
+          <option value="active">Activa</option>
+          <option value="inactive">Inactiva</option>
+        </select>
+      </label>
+    }
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
+}

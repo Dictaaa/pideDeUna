@@ -1,0 +1,24 @@
+.table-skeleton {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 15px 16px;
+  border-top: 1px solid var(--line);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.row app-skeleton {
+  flex: 1;
+}
+.row app-skeleton:first-child {
+  flex: 1.6;
+}

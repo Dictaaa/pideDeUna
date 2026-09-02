@@ -1,0 +1,270 @@
+// src/app/shared/styles/_admin-page.scss
+// Patrón visual compartido por las páginas de administración
+// (Categorías, Productos, Mesas, Usuarios, Configuración): encabezado
+// + tabla + panel lateral de formulario. Cada página lo importa con
+// @use '../../../../shared/styles/admin-page' as *; y solo agrega
+// lo específico de su dominio en su propio .scss.
+
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 28px 28px 60px;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 21px;
+    margin: 0 0 3px;
+    font-weight: 700;
+  }
+  p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+}
+
+.state-message,
+.empty-state {
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-lg);
+}
+
+// ── Botones ────────────────────────────────────────────────
+
+.btn-primary {
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  padding: 9px 16px;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    opacity: 0.9;
+  }
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 9px 16px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: var(--ink-faint);
+    background: var(--surface);
+  }
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--primary-ink);
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+  &.danger {
+    color: #b3261e;
+  }
+}
+
+// ── Tabla ──────────────────────────────────────────────────
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  font-size: 13px;
+
+  thead {
+    background: var(--surface);
+    th {
+      text-align: left;
+      padding: 11px 14px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  tbody tr {
+    border-top: 1px solid var(--line);
+    &:hover {
+      background: var(--surface);
+    }
+  }
+
+  td {
+    padding: 11px 14px;
+    vertical-align: middle;
+  }
+}
+
+.cell-strong {
+  font-weight: 600;
+}
+.cell-muted {
+  color: var(--ink-soft);
+}
+.cell-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+// ── Badges de estado ─────────────────────────────────────────
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 14%, white);
+  color: var(--primary-ink);
+
+  &.badge-off {
+    background: var(--surface);
+    color: var(--ink-faint);
+  }
+}
+
+// ── Panel lateral de formulario (crear/editar) ──────────────
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 28, 28, 0.4);
+  z-index: 80;
+}
+
+.panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 81;
+  width: min(420px, 92vw);
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  padding: 26px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  h2 {
+    font-size: 17px;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+}
+
+.panel-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.form-error {
+  background: color-mix(in srgb, var(--primary) 8%, white);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--line));
+  color: var(--primary-ink);
+  font-size: 12.5px;
+  padding: 9px 12px;
+  border-radius: 8px;
+}
+
+// ── Campos de formulario ─────────────────────────────────────
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  input,
+  select,
+  textarea {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-family: var(--font);
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--bg);
+    transition: border-color 0.15s ease;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+  }
+}
+
+.field-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+
+  input {
+    width: auto;
+  }
+  span {
+    font-weight: 500;
+    color: var(--ink);
+  }
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+
+  .field {
+    flex: 1;
+  }
+}

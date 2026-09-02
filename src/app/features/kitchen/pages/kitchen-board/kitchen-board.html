@@ -1,0 +1,40 @@
+<div class="kitchen-page">
+  <div class="kitchen-head">
+    <h1>Cocina</h1>
+    <p>Toca el botón cuando termines cada paso.</p>
+  </div>
+
+  @if (loading()) {
+    <div class="state-message">Cargando…</div>
+  } @else if (orders().length === 0) {
+    <div class="empty-state">No hay pedidos pendientes por ahora 🎉</div>
+  } @else {
+    <div class="kitchen-grid">
+      @for (order of orders(); track order.id) {
+        <div class="kitchen-card" [class.urgent]="isUrgent(order)">
+          <div class="kitchen-card-head">
+            <span class="kitchen-number">#{{ order.orderNumber }}</span>
+            <span class="kitchen-time">hace {{ minutesWaiting(order) }} min</span>
+          </div>
+          <div class="kitchen-table">Mesa {{ order.table?.tableNumber }}</div>
+
+          <ul class="kitchen-items">
+            @for (item of order.items; track item.id) {
+              <li>{{ item.quantity }} × {{ item.productName }}</li>
+            }
+          </ul>
+
+          <button
+            type="button"
+            class="kitchen-btn"
+            [class.is-preparing]="order.status === 'PREPARING'"
+            [disabled]="isAdvancing(order)"
+            (click)="advance(order)"
+          >
+            {{ isAdvancing(order) ? 'Un momento…' : buttonLabel(order) }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>
