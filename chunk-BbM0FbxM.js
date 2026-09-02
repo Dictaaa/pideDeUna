@@ -1,1 +1,0 @@
-import{bt as ry,ht as p,r as A,xt as sH}from"./main-D6U4JBXV.js";var s=class r{api=p(ry);getBySlug(t){return this.api.get(sH.RESTAURANT.PROFILE(t))}uploadLogo(t,a){let e=new FormData;return e.append(`file`,a),this.api.post(sH.RESTAURANT.UPLOAD_LOGO(t),e)}static ɵfac=function(a){return new(a||r)};static ɵprov=A({token:r,factory:r.ɵfac,providedIn:`root`})};export{s as t};
