@@ -38,9 +38,10 @@ export class Login {
           this.router.navigateByUrl(returnUrl);
         } else if (res.restaurant) {
           this.router.navigateByUrl(`/admin/${res.restaurant.slug}/${landingPathFor(res.user.roles)}`);
+        } else if (res.user.roles.includes('SUPER_ADMIN')) {
+          this.router.navigateByUrl('/super-admin/restaurantes');
         } else {
-          // SUPER_ADMIN sin restaurante propio — todavía no hay panel para ese caso.
-          this.errorMessage.set('Sesión iniciada, pero el panel de SUPER_ADMIN aún no existe.');
+          this.errorMessage.set('No sabemos a dónde mandarte — contacta a soporte.');
           this.loading.set(false);
         }
       },

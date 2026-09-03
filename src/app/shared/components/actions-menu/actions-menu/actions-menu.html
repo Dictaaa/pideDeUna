@@ -1,0 +1,19 @@
+<div class="actions-menu">
+  <button #trigger type="button" class="actions-trigger" (click)="toggle($event)" aria-label="Más acciones">⋮</button>
+
+  @if (open()) {
+    <div
+      class="actions-dropdown"
+      [style.top.px]="menuTop()"
+      [style.left.px]="menuLeft()"
+      (click)="$event.stopPropagation()"
+    >
+      @for (a of actions(); track a.label) {
+        <button type="button" class="actions-item" [class.danger]="a.danger" (click)="runAction(a)">
+          <span class="actions-icon">{{ a.icon }}</span>
+          <span>{{ a.label }}</span>
+        </button>
+      }
+    </div>
+  }
+</div>

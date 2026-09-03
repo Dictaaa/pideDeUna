@@ -8,7 +8,10 @@
   ></app-navbar>
 
   <div class="shell-body">
-    <app-sidebar [slug]="slug" [isOpen]="sidebarOpen()"></app-sidebar>
+    @if (sidebarOpen()) {
+      <div class="sidebar-backdrop" (click)="toggleSidebar()"></div>
+    }
+    <app-sidebar [slug]="slug" [isOpen]="sidebarOpen()" (itemSelected)="sidebarOpen.set(false)"></app-sidebar>
     <main class="shell-content">
       <router-outlet></router-outlet>
     </main>

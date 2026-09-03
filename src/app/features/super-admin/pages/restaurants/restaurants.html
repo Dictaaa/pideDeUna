@@ -1,0 +1,112 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Restaurantes</h1>
+      <p>Todos los restaurantes en PideDeUna — crea, revisa el plan, activa o suspende.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nuevo restaurante</button>
+  </div>
+
+  <input
+    type="text"
+    class="search-input"
+    placeholder="Buscar por nombre o slug…"
+    [ngModel]="search()"
+    (ngModelChange)="onSearchChange($event)"
+  />
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="5" [cols]="6"></app-table-skeleton>
+  } @else if (restaurants().length === 0) {
+    <div class="empty-state">No hay restaurantes que coincidan.</div>
+  } @else {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Slug</th>
+          <th>Ciudad</th>
+          <th>Plan</th>
+          <th>Usuarios</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of restaurants(); track r.id) {
+          <tr>
+            <td class="cell-strong">{{ r.name }}</td>
+            <td class="cell-muted">{{ r.slug }}</td>
+            <td class="cell-muted">{{ r.city || '—' }}</td>
+            <td class="cell-muted">{{ r.plan?.name || 'Sin plan' }}</td>
+            <td>{{ r.usersCount }}</td>
+            <td><span [class]="badgeClass(r.status)">{{ statusLabel(r.status) }}</span></td>
+            <td class="cell-actions">
+              <app-actions-menu [actions]="rowActions(r)"></app-actions-menu>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>Nuevo restaurante</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre del restaurante</span>
+      <input type="text" [ngModel]="form().restaurantName" (ngModelChange)="updateField('restaurantName', $event)" name="restaurantName" />
+    </label>
+
+    <label class="field">
+      <span>Slug (para la URL)</span>
+      <input type="text" placeholder="mi-restaurante" [ngModel]="form().slug" (ngModelChange)="updateField('slug', $event)" name="slug" />
+    </label>
+
+    <label class="field">
+      <span>Nombre del administrador</span>
+      <input type="text" [ngModel]="form().adminName" (ngModelChange)="updateField('adminName', $event)" name="adminName" />
+    </label>
+
+    <label class="field">
+      <span>Correo del administrador</span>
+      <input type="email" [ngModel]="form().adminEmail" (ngModelChange)="updateField('adminEmail', $event)" name="adminEmail" />
+    </label>
+
+    <label class="field">
+      <span>Contraseña inicial</span>
+      <input type="text" [ngModel]="form().adminPassword" (ngModelChange)="updateField('adminPassword', $event)" name="adminPassword" />
+    </label>
+
+    <label class="field">
+      <span>Plan</span>
+      <select [ngModel]="form().planId" (ngModelChange)="updateField('planId', $event)" name="planId">
+        @for (p of plans(); track p.id) {
+          <option [value]="p.id">{{ p.name }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Estado inicial</span>
+      <select [ngModel]="form().status" (ngModelChange)="updateField('status', $event)" name="status">
+        <option value="trial">Prueba (14 días)</option>
+        <option value="active">Activo (ya pagó por fuera)</option>
+      </select>
+    </label>
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Creando…' : 'Crear restaurante' }}
+      </button>
+    </div>
+  </div>
+}

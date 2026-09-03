@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 import { roleGuard } from './core/guards/role-guard';
+import { homeGuard } from './core/guards/home-guard';
+import { superAdminGuard } from './core/guards/super-admin-guard';
 
 const ADMIN_ROLES = ['RESTAURANT_ADMIN', 'SUPER_ADMIN'];
 
@@ -12,7 +14,11 @@ const ADMIN_ROLES = ['RESTAURANT_ADMIN', 'SUPER_ADMIN'];
  * protegido por sesión.
  */
 export const routes: Routes = [
-  { path: '', redirectTo: 'restaurante-sua', pathMatch: 'full' }, // demo de arranque
+  {
+    path: '',
+    canActivate: [homeGuard],
+    loadComponent: () => import('./features/home/pages/home/home').then((m) => m.Home),
+  },
 
   // ── Auth (públicas) ─────────────────────────────────────
   {
@@ -77,9 +83,38 @@ export const routes: Routes = [
         loadComponent: () => import('./features/users/pages/users/users').then((m) => m.Users),
       },
       {
+        path: 'plan',
+        canActivate: [roleGuard(...ADMIN_ROLES)],
+        loadComponent: () => import('./features/plan/pages/plan/plan').then((m) => m.Plan),
+      },
+      {
         path: 'configuracion',
         canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/settings/pages/settings/settings').then((m) => m.Settings),
+      },
+    ],
+  },
+
+  // ── Super Admin (protegido, sin restaurante) ────────────
+  {
+    path: 'super-admin',
+    canActivate: [superAdminGuard],
+    loadComponent: () =>
+      import('./features/super-admin/layout/super-admin-shell/super-admin-shell').then((m) => m.SuperAdminShell),
+    children: [
+      { path: '', redirectTo: 'restaurantes', pathMatch: 'full' },
+      {
+        path: 'restaurantes',
+        loadComponent: () => import('./features/super-admin/pages/restaurants/restaurants').then((m) => m.Restaurants),
+      },
+      {
+        path: 'restaurantes/:id',
+        loadComponent: () =>
+          import('./features/super-admin/pages/restaurant-detail/restaurant-detail').then((m) => m.RestaurantDetailPage),
+      },
+      {
+        path: 'planes',
+        loadComponent: () => import('./features/super-admin/pages/plans/plans').then((m) => m.Plans),
       },
     ],
   },
@@ -92,5 +127,11 @@ export const routes: Routes = [
   {
     path: ':slug',
     loadComponent: () => import('./features/menu/pages/menu-page/menu-page').then((m) => m.MenuPage),
+  },
+
+  // ── 404 — SIEMPRE al final, es la que atrapa todo lo demás ──
+  {
+    path: '**',
+    loadComponent: () => import('./features/not-found/pages/not-found/not-found').then((m) => m.NotFound),
   },
 ];

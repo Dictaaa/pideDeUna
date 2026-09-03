@@ -27,8 +27,12 @@ export class OrderAdmin {
   advance(slug: string, orderId: string) {
     return this.api.post<Order>(API.ORDERS.ADVANCE(slug, orderId), {});
   }
-  /** La mesera marca como entregado: READY -> SERVED. */
-  serve(slug: string, orderId: string) {
-    return this.api.post<Order>(API.ORDERS.SERVE(slug, orderId), {});
+    /**
+   * La mesera cobra y cierra el pedido: READY -> COMPLETED.
+   * paymentMethod es obligatorio; transactionReference (el número de
+   * factura del datáfono, Wompi, ePayco, etc.) es opcional.
+   */
+  serve(slug: string, orderId: string, payload: { paymentMethod: string; transactionReference?: string }) {
+    return this.api.post<Order>(API.ORDERS.SERVE(slug, orderId), payload);
   }
 }

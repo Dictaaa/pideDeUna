@@ -24,9 +24,21 @@ const STATUS_LABELS: Record<string, string> = {
   PREPARING: 'En cocina',
   READY: 'Listo',
   SERVED: 'Entregado',
-  COMPLETED: 'Completado',
+  COMPLETED: 'Cobrado',
   CANCELLED: 'Cancelado',
 };
+
+// Cómo puede haberse cobrado un pedido — cubre efectivo, datáfono
+// aparte, pasarela en línea (si el restaurante la tiene), o "otro".
+// No procesamos el cobro de verdad, solo lo registramos.
+const PAYMENT_METHODS = [
+  { value: 'CASH', label: 'Efectivo' },
+  { value: 'CARD', label: 'Tarjeta (datáfono aparte)' },
+  { value: 'TRANSFER', label: 'Transferencia' },
+  { value: 'WOMPI', label: 'Wompi' },
+  { value: 'EPAYCO', label: 'ePayco' },
+  { value: 'OTHER', label: 'Otro' },
+];
 
 @Component({
   selector: 'app-orders',
@@ -44,6 +56,7 @@ export class Orders {
 
   slug = this.route.parent!.snapshot.paramMap.get('slug')!;
   statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
+  paymentMethods = PAYMENT_METHODS;
 
   loading = signal(true);
   orders = signal<Order[]>([]);
@@ -62,6 +75,11 @@ export class Orders {
   pickerCategoryId = signal<string | null>(null);
   saving = signal(false);
   errorMessage = signal<string | null>(null);
+
+  // Solo se usan al cobrar (order.status === 'READY').
+  paymentMethod = signal('CASH');
+  paymentReference = signal('');
+  charging = signal(false);
 
   draftTotal = computed(() => this.draftItems().reduce((sum, i) => sum + i.unitPrice * i.quantity, 0));
 
@@ -82,8 +100,6 @@ export class Orders {
       next: (orders) => {
         this.orders.set(orders);
         this.loading.set(false);
-        // Si el pedido que se está viendo en el panel cambió (p. ej. cocina
-        // lo avanzó), refresca lo que se ve ahí también.
         const current = this.activeOrder();
         if (current) {
           const fresh = orders.find((o) => o.id === current.id);
@@ -104,8 +120,6 @@ export class Orders {
   productsInPickerCategory(): Product[] {
     return this.categories().find((c) => c.id === this.pickerCategoryId())?.products ?? [];
   }
-
-  // ---------------- Crear pedido ----------------
 
   openCreate(): void {
     this.panelMode.set('create');
@@ -143,7 +157,7 @@ export class Orders {
     }
   }
 
-  submitCreate(event: Event): void {
+  submitCreate(event : Event): void {
     if (!this.selectedTableId()) {
       this.errorMessage.set('Elige una mesa — no puede faltar.');
       return;
@@ -153,6 +167,7 @@ export class Orders {
       return;
     }
 
+    const buttonEl = event.currentTarget as HTMLElement;
     this.saving.set(true);
     this.errorMessage.set(null);
 
@@ -164,7 +179,7 @@ export class Orders {
       })
       .subscribe({
         next: () => {
-           this.foodBurst.trigger(event.currentTarget as HTMLElement);
+          this.foodBurst.trigger(buttonEl);
           this.saving.set(false);
           this.panelOpen.set(false);
           this.reload();
@@ -176,12 +191,12 @@ export class Orders {
       });
   }
 
-  // ---------------- Ver / editar pedido existente ----------------
-
   openOrder(order: Order): void {
     this.panelMode.set('edit');
     this.activeOrder.set(order);
     this.pickerCategoryId.set(this.categories()[0]?.id ?? null);
+    this.paymentMethod.set('CASH');
+    this.paymentReference.set('');
     this.errorMessage.set(null);
     this.panelOpen.set(true);
   }
@@ -222,14 +237,27 @@ export class Orders {
     });
   }
 
-  serveOrder(order: Order): void {
-    this.orderService.serve(this.slug, order.id).subscribe({
-      next: () => {
-        this.panelOpen.set(false);
-        this.reload();
-      },
-      error: (err) => this.errorMessage.set(err?.error?.error || 'No se pudo marcar como entregado.'),
-    });
+  /** Cobra y cierra el pedido — pide método de pago (obligatorio) y número de factura (opcional). */
+  confirmCharge(order: Order): void {
+    this.charging.set(true);
+    this.errorMessage.set(null);
+
+    this.orderService
+      .serve(this.slug, order.id, {
+        paymentMethod: this.paymentMethod(),
+        transactionReference: this.paymentReference().trim() || undefined,
+      })
+      .subscribe({
+        next: () => {
+          this.charging.set(false);
+          this.panelOpen.set(false);
+          this.reload();
+        },
+        error: (err) => {
+          this.charging.set(false);
+          this.errorMessage.set(err?.error?.error || 'No se pudo registrar el cobro.');
+        },
+      });
   }
 
   closePanel(): void {

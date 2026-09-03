@@ -1,0 +1,114 @@
+<div class="home">
+  <!-- ── Barra superior ── -->
+  <header class="home-nav">
+    <div class="home-nav-inner">
+      <div class="home-brand">
+        <div class="home-brand-mark">P</div>
+        <span>PideDeUna</span>
+      </div>
+      <nav class="home-nav-actions">
+        <a routerLink="/login" class="nav-link">Iniciar sesión</a>
+        <a routerLink="/register" class="btn-nav-primary">Registra tu restaurante</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>El menú de tu restaurante, sin filas de espera ni cartas manchadas.</h1>
+      <p class="hero-sub">
+        QR en cada mesa, pedidos que llegan directo a cocina, y un panel para administrar todo —
+        categorías, productos, mesas, usuarios y ventas — desde un solo lugar.
+      </p>
+      <div class="hero-actions">
+        <a routerLink="/register" class="btn-hero-primary">Empieza gratis 14 días</a>
+        <a routerLink="/login" class="btn-hero-secondary">Ya tengo cuenta</a>
+      </div>
+      <p class="hero-note">Sin tarjeta para empezar. Cancela cuando quieras.</p>
+    </div>
+  </section>
+
+  <!-- ── Qué es PideDeUna ── -->
+  <section class="section features-section">
+    <h2 class="section-title">Todo lo que necesita tu restaurante para operar por QR</h2>
+    <div class="features-grid">
+      @for (f of features; track f.title) {
+        <div class="feature-card">
+          <span class="feature-icon">{{ f.icon }}</span>
+          <h3>{{ f.title }}</h3>
+          <p>{{ f.description }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ── Planes ── -->
+  <section class="section plans-section" id="planes">
+    <h2 class="section-title">Un plan para cada tamaño de restaurante</h2>
+    <p class="section-sub">Todos incluyen 14 días de prueba. Ninguno te pide tarjeta para empezar.</p>
+
+    @if (loadingPlans()) {
+      <div class="plans-grid">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="plan-card">
+            <app-skeleton width="60%" height="16px"></app-skeleton>
+            <app-skeleton width="80%" height="28px"></app-skeleton>
+            <app-skeleton width="100%" height="120px" radius="8px"></app-skeleton>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="plans-grid">
+        @for (plan of plans(); track plan.id) {
+          <div class="plan-card" [class.highlight]="plan.code === 'PRO'">
+            @if (plan.code === 'PRO') {
+              <span class="plan-badge">Más elegido</span>
+            }
+            <span class="plan-name">{{ plan.name }}</span>
+            <span class="plan-price">{{ '$' + (+plan.priceMonthly | number: '1.0-0') }}<small>/mes</small></span>
+
+            <ul class="plan-limits">
+              <li>{{ plan.maxCategories ?? 'Sin límite' }} categorías</li>
+              <li>{{ plan.maxProducts ?? 'Sin límite' }} productos</li>
+              <li>{{ plan.maxTables ?? 'Sin límite' }} mesas</li>
+              <li>{{ plan.maxUsers ?? 'Sin límite' }} usuarios</li>
+              <li>{{ plan.maxPhotos ?? 'Sin límite' }} fotos</li>
+              <li>{{ plan.maxVideos ?? 'Sin límite' }} videos</li>
+            </ul>
+
+            <a routerLink="/register" class="btn-plan">Comenzar con {{ plan.name }}</a>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- ── Contacto ── -->
+  <section class="section contact-section" id="contacto">
+    <h2 class="section-title">¿Tienes preguntas?</h2>
+    <p class="section-sub">Escríbenos, te respondemos rápido.</p>
+    <div class="contact-grid">
+      <a href="mailto:hola@pidedeuna.com" class="contact-card">
+        <span class="contact-icon">✉️</span>
+        <span class="contact-label">Correo</span>
+        <span class="contact-value">hola&#64;pidedeuna.com</span>
+      </a>
+      <a href="https://wa.me/573000000000" target="_blank" rel="noopener" class="contact-card">
+        <span class="contact-icon">💬</span>
+        <span class="contact-label">WhatsApp</span>
+        <span class="contact-value">+57 300 000 0000</span>
+      </a>
+      <div class="contact-card">
+        <span class="contact-icon">📍</span>
+        <span class="contact-label">Ubicación</span>
+        <span class="contact-value">Bogotá, Colombia</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="home-footer">
+    <span>Pide de una</span>
+  </footer>
+</div>

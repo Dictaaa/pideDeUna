@@ -11,12 +11,21 @@
 
 .shell-body {
   flex: 1;
-  display: flex;
+  position: relative;
   min-height: 0;
+  overflow-x: hidden; /* solo lo que necesita el sidebar para su animación */
 }
 
 .shell-content {
-  flex: 1;
+  height: 100%;
   overflow-y: auto;
   background: var(--bg);
+}
+
+/* Oscurece el contenido mientras el sidebar está abierto — clic afuera lo cierra. */
+.sidebar-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 15;
 }

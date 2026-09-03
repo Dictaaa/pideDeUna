@@ -95,6 +95,7 @@ export const API = {
   },
   SUBSCRIPTION: {
     GET: (slug: string) => `${BASE}/restaurantes/${slug}/subscription`,
+    USAGE: (slug: string) => `${BASE}/restaurantes/${slug}/subscription/usage`,
     CHANGE: (slug: string) => `${BASE}/restaurantes/${slug}/subscription`,
   },
 
@@ -109,6 +110,23 @@ export const API = {
     CREATE: (slug: string) => `${BASE}/restaurantes/${slug}/tables`,
     BY_ID: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/tables/${id}`,
     REGENERATE_QR: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/tables/${id}/qr/regenerate`,
+  },
+
+  // ── Estadísticas (solo admin) ────────────────────────────
+  STATS: {
+    SUMMARY: (slug: string) => `${BASE}/restaurantes/${slug}/stats/summary`,
+    TIMESERIES: (slug: string) => `${BASE}/restaurantes/${slug}/stats/timeseries`,
+    TOP_PRODUCTS: (slug: string) => `${BASE}/restaurantes/${slug}/stats/top-products`,
+  },
+
+  // ── Super Admin (global, sin slug) ───────────────────────
+  SUPER_ADMIN: {
+    RESTAURANTS: () => `${BASE}/super-admin/restaurants`,
+    RESTAURANT_BY_ID: (id: string) => `${BASE}/super-admin/restaurants/${id}`,
+    RESTAURANT_STATUS: (id: string) => `${BASE}/super-admin/restaurants/${id}/status`,
+    RESTAURANT_PLAN: (id: string) => `${BASE}/super-admin/restaurants/${id}/plan`,
+    PLANS: () => `${BASE}/super-admin/plans`,
+    PLAN_BY_ID: (id: string) => `${BASE}/super-admin/plans/${id}`,
   },
 
   // ── Pedidos ──────────────────────────────────────────────
@@ -160,12 +178,5 @@ export const API = {
   // ── Auditoría (solo lectura) ─────────────────────────────
   AUDIT_LOGS: {
     LIST: (slug: string) => `${BASE}/restaurantes/${slug}/audit-logs`,
-  },
-
-    // ── Estadísticas (solo admin) ────────────────────────────
-  STATS: {
-    SUMMARY: (slug: string) => `${BASE}/restaurantes/${slug}/stats/summary`,
-    TIMESERIES: (slug: string) => `${BASE}/restaurantes/${slug}/stats/timeseries`,
-    TOP_PRODUCTS: (slug: string) => `${BASE}/restaurantes/${slug}/stats/top-products`,
   },
 } as const;

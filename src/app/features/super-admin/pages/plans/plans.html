@@ -1,0 +1,118 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Planes</h1>
+      <p>El catálogo global — lo que ve cualquier restaurante al elegir o cambiar de plan.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nuevo plan</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="3" [cols]="5"></app-table-skeleton>
+  } @else if (plans().length === 0) {
+    <div class="empty-state">Todavía no hay planes.</div>
+  } @else {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Precio</th>
+          <th>Categorías</th>
+          <th>Productos</th>
+          <th>Mesas</th>
+          <th>Usuarios</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (plan of plans(); track plan.id) {
+          <tr>
+            <td class="cell-strong">{{ plan.name }}</td>
+            <td>{{ '$' + (+plan.priceMonthly | number: '1.0-0') }}</td>
+            <td class="cell-muted">{{ plan.maxCategories ?? 'Sin límite' }}</td>
+            <td class="cell-muted">{{ plan.maxProducts ?? 'Sin límite' }}</td>
+            <td class="cell-muted">{{ plan.maxTables ?? 'Sin límite' }}</td>
+            <td class="cell-muted">{{ plan.maxUsers ?? 'Sin límite' }}</td>
+            <td>
+              <span class="badge" [class.badge-off]="!plan.isActive">
+                {{ plan.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="cell-actions">
+              <app-actions-menu [actions]="rowActions(plan)"></app-actions-menu>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>{{ editingId() ? 'Editar plan' : 'Nuevo plan' }}</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    @if (!editingId()) {
+      <label class="field">
+        <span>Código (interno, no se puede cambiar después)</span>
+        <input type="text" placeholder="Ej: STARTER" [ngModel]="form().code" (ngModelChange)="updateField('code', $event)" name="code" />
+      </label>
+    }
+
+    <label class="field">
+      <span>Nombre</span>
+      <input type="text" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" name="name" />
+    </label>
+
+    <label class="field">
+      <span>Precio mensual (COP)</span>
+      <input type="number" min="0" [ngModel]="form().priceMonthly" (ngModelChange)="updateField('priceMonthly', $event)" name="priceMonthly" />
+    </label>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Categorías (vacío = sin límite)</span>
+        <input type="number" min="0" [ngModel]="form().maxCategories" (ngModelChange)="updateField('maxCategories', $event)" name="maxCategories" />
+      </label>
+      <label class="field">
+        <span>Productos</span>
+        <input type="number" min="0" [ngModel]="form().maxProducts" (ngModelChange)="updateField('maxProducts', $event)" name="maxProducts" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Mesas</span>
+        <input type="number" min="0" [ngModel]="form().maxTables" (ngModelChange)="updateField('maxTables', $event)" name="maxTables" />
+      </label>
+      <label class="field">
+        <span>Usuarios</span>
+        <input type="number" min="0" [ngModel]="form().maxUsers" (ngModelChange)="updateField('maxUsers', $event)" name="maxUsers" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Fotos</span>
+        <input type="number" min="0" [ngModel]="form().maxPhotos" (ngModelChange)="updateField('maxPhotos', $event)" name="maxPhotos" />
+      </label>
+      <label class="field">
+        <span>Videos</span>
+        <input type="number" min="0" [ngModel]="form().maxVideos" (ngModelChange)="updateField('maxVideos', $event)" name="maxVideos" />
+      </label>
+    </div>
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
+}

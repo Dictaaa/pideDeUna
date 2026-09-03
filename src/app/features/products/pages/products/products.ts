@@ -7,6 +7,7 @@ import { Category } from '../../../categories/services/category';
 import { AdminProduct, AdminProductMedia, ProductFormValue } from '../../models/product.models';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
 import { AdminCategory } from '../../../categories/models/category.models';
+import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
 
 const EMPTY_FORM: ProductFormValue = {
   name: '',
@@ -33,7 +34,7 @@ function slugify(text: string): string {
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, TableSkeleton],
+  imports: [FormsModule, DecimalPipe, TableSkeleton, ActionsMenu],
   templateUrl: './products.html',
   styleUrl: './products.scss',
 })
@@ -214,5 +215,16 @@ export class Products {
     this.productService.removeMedia(this.slug, productId, media.id).subscribe({
       next: () => this.currentMedia.set(this.currentMedia().filter((m) => m.id !== media.id)),
     });
+  }
+
+   badgeClass(product: AdminProduct): string {
+    return product.isAvailable ? 'badge-success' : 'badge-neutral';
+  }
+
+  rowActions(product: AdminProduct): RowAction[] {
+    return [
+      { label: 'Editar', icon: '✏️', handler: () => this.openEdit(product) },
+      { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(product), danger: true },
+    ];
   }
 }

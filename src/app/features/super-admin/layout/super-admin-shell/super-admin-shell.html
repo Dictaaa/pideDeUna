@@ -1,0 +1,29 @@
+<div class="sa-shell">
+  <header class="sa-navbar">
+    <div class="sa-brand">
+      <div class="sa-brand-mark">P</div>
+      <span>PideDeUna <small>· Super Admin</small></span>
+    </div>
+    <div class="sa-navbar-user">
+      <span class="sa-user-name">{{ userName }}</span>
+      <button type="button" class="sa-logout-btn" (click)="logout()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <div class="sa-body">
+    <nav class="sa-sidebar">
+      <a class="sa-nav-item" routerLink="/super-admin/restaurantes" routerLinkActive="active">
+        <span class="sa-nav-icon">🏬</span>
+        <span>Restaurantes</span>
+      </a>
+      <a class="sa-nav-item" routerLink="/super-admin/planes" routerLinkActive="active">
+        <span class="sa-nav-icon">💳</span>
+        <span>Planes</span>
+      </a>
+    </nav>
+
+    <main class="sa-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

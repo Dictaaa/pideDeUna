@@ -1,0 +1,94 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Plan</h1>
+      <p>Cuánto llevas usado de tu plan actual, y las opciones para cambiarte.</p>
+    </div>
+  </div>
+
+  @if (errorMessage(); as msg) {
+    <div class="form-error page-error">{{ msg }}</div>
+  }
+
+  @if (loading()) {
+    <div class="section">
+      <app-skeleton width="120px" height="16px"></app-skeleton>
+      <div class="skeleton-gap"></div>
+      <app-skeleton width="100%" height="60px" radius="10px"></app-skeleton>
+    </div>
+  } @else if (usage()) {
+    @if (usage(); as u) {
+    <section class="section current-plan-card">
+      <div class="current-plan-head">
+        <div>
+          <span class="current-plan-name">{{ u.plan.name }}</span>
+          <span class="badge status-badge">{{ statusLabel(u.subscription.status) }}</span>
+        </div>
+        <span class="current-plan-price">{{ '$' + (+u.plan.priceMonthly | number: '1.0-0') }}/mes</span>
+      </div>
+      @if (u.subscription.status === 'trial' && u.subscription.trialEndsAt) {
+        <p class="trial-note">
+          Tu período de prueba termina el {{ trialEndsLabel(u.subscription.trialEndsAt) }}.
+        </p>
+      }
+    </section>
+
+    <section class="section">
+      <h2>Uso actual</h2>
+      <div class="usage-grid">
+        @for (row of usageRows; track row.key) {
+          @if (usageItem(row.key); as item) {
+            <div class="usage-card" [class.near-limit]="isNearLimit(item)">
+              <div class="usage-card-head">
+                <span class="usage-icon">{{ row.icon }}</span>
+                <span class="usage-label">{{ row.label }}</span>
+              </div>
+              @if (item.limit === null) {
+                <span class="usage-count">{{ item.used }} · Sin límite</span>
+              } @else {
+                <span class="usage-count">{{ item.used }} / {{ item.limit }}</span>
+                <div class="usage-bar-track">
+                  <div class="usage-bar" [style.width.%]="usagePct(item)"></div>
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Cambiar de plan</h2>
+      <div class="plans-grid">
+        @for (plan of plans(); track plan.id) {
+          <div class="plan-card" [class.current]="isCurrentPlan(plan)">
+            @if (isCurrentPlan(plan)) {
+              <span class="plan-current-badge">Tu plan actual</span>
+            }
+            <span class="plan-name">{{ plan.name }}</span>
+            <span class="plan-price">{{ '$' + (+plan.priceMonthly | number: '1.0-0') }}<small>/mes</small></span>
+
+            <ul class="plan-limits">
+              <li>{{ plan.maxCategories ?? 'Sin límite' }} categorías</li>
+              <li>{{ plan.maxProducts ?? 'Sin límite' }} productos</li>
+              <li>{{ plan.maxTables ?? 'Sin límite' }} mesas</li>
+              <li>{{ plan.maxUsers ?? 'Sin límite' }} usuarios</li>
+              <li>{{ plan.maxPhotos ?? 'Sin límite' }} fotos</li>
+              <li>{{ plan.maxVideos ?? 'Sin límite' }} videos</li>
+            </ul>
+
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="isCurrentPlan(plan) || changingPlanId() === plan.id"
+              (click)="changePlan(plan)"
+            >
+              {{ isCurrentPlan(plan) ? 'Plan actual' : changingPlanId() === plan.id ? 'Cambiando…' : 'Cambiar a este plan' }}
+            </button>
+          </div>
+        }
+      </div>
+    </section>
+  }
+  }
+</div>

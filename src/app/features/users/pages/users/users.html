@@ -8,112 +8,104 @@
   </div>
 
   @if (loading()) {
-    <app-table-skeleton [rows]="5" [cols]="4"></app-table-skeleton>
+  <app-table-skeleton [rows]="5" [cols]="4"></app-table-skeleton>
   } @else if (users().length === 0) {
-    <div class="empty-state">Todavía no tienes usuarios. Crea el primero.</div>
+  <div class="empty-state">Todavía no tienes usuarios. Crea el primero.</div>
   } @else {
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Email</th>
-          <th>Roles</th>
-          <th>Estado</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (u of users(); track u.id) {
-          <tr>
-            <td class="cell-strong">{{ u.name }}</td>
-            <td class="cell-muted">{{ u.email }}</td>
-            <td class="cell-roles">
-              @for (r of u.roles; track r.id) {
-                <span class="badge">{{ r.name }}</span>
-              }
-            </td>
-            <td>
-              <span class="badge" [class.badge-off]="u.status !== 'active'">{{ statusLabel(u.status) }}</span>
-            </td>
-            <td class="cell-actions">
-              <button type="button" class="link-btn" (click)="openEdit(u)">Editar</button>
-              <button type="button" class="link-btn danger" (click)="remove(u)">Eliminar</button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Roles</th>
+        <th>Estado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (u of users(); track u.id) {
+      <tr>
+        <td class="cell-strong">{{ u.name }}</td>
+        <td class="cell-muted">{{ u.email }}</td>
+        <td class="cell-roles">
+          @for (r of u.roles; track r.id) {
+          <span class="badge">{{ r.name }}</span>
+          }
+        </td>
+        <td>
+          <span class="badge" [class]="badgeClass(u.status)">{{ statusLabel(u.status) }}</span>
+        </td>
+        <td class="cell-actions">
+          <app-actions-menu [actions]="rowActions(u)"></app-actions-menu>
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
   }
 </div>
 
 @if (formOpen()) {
-  <div class="overlay" (click)="closeForm()"></div>
-  <div class="panel">
-    <h2>{{ editingId() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+<div class="overlay" (click)="closeForm()"></div>
+<div class="panel">
+  <h2>{{ editingId() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
 
-    @if (errorMessage(); as msg) {
-      <div class="form-error">{{ msg }}</div>
-    }
+  @if (errorMessage(); as msg) {
+  <div class="form-error">{{ msg }}</div>
+  }
 
-    <label class="field">
-      <span>Nombre</span>
-      <input type="text" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" name="name" />
-    </label>
+  <label class="field">
+    <span>Nombre</span>
+    <input type="text" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" name="name" />
+  </label>
 
-    @if (!editingId()) {
-      <label class="field">
-        <span>Email</span>
-        <input type="email" [ngModel]="form().email" (ngModelChange)="updateField('email', $event)" name="email" />
+  @if (!editingId()) {
+  <label class="field">
+    <span>Email</span>
+    <input type="email" [ngModel]="form().email" (ngModelChange)="updateField('email', $event)" name="email" />
+  </label>
+  }
+
+  <label class="field">
+    <span>Teléfono</span>
+    <input type="text" [ngModel]="form().phone" (ngModelChange)="updateField('phone', $event)" name="phone" />
+  </label>
+
+  <label class="field">
+    <span>{{ editingId() ? 'Nueva contraseña (déjalo vacío para no cambiarla)' : 'Contraseña' }}</span>
+    <input type="password" [ngModel]="form().password" (ngModelChange)="updateField('password', $event)"
+      name="password" />
+  </label>
+
+  @if (editingId()) {
+  <label class="field">
+    <span>Estado</span>
+    <select [ngModel]="form().status" (ngModelChange)="updateField('status', $event)" name="status">
+      @for (s of statuses; track s) {
+      <option [value]="s">{{ statusLabel(s) }}</option>
+      }
+    </select>
+  </label>
+  }
+
+  <div class="field">
+    <span>Roles</span>
+    <div class="roles-grid">
+      @for (role of roles(); track role.id) {
+      <label class="role-check">
+        <input type="checkbox" [checked]="form().roleIds.includes(role.id)"
+          (change)="toggleRole(role.id, $any($event.target).checked)" />
+        <span>{{ role.name }}</span>
       </label>
-    }
-
-    <label class="field">
-      <span>Teléfono</span>
-      <input type="text" [ngModel]="form().phone" (ngModelChange)="updateField('phone', $event)" name="phone" />
-    </label>
-
-    <label class="field">
-      <span>{{ editingId() ? 'Nueva contraseña (déjalo vacío para no cambiarla)' : 'Contraseña' }}</span>
-      <input
-        type="password"
-        [ngModel]="form().password"
-        (ngModelChange)="updateField('password', $event)"
-        name="password"
-      />
-    </label>
-
-    @if (editingId()) {
-      <label class="field">
-        <span>Estado</span>
-        <select [ngModel]="form().status" (ngModelChange)="updateField('status', $event)" name="status">
-          @for (s of statuses; track s) {
-            <option [value]="s">{{ statusLabel(s) }}</option>
-          }
-        </select>
-      </label>
-    }
-
-    <div class="field">
-      <span>Roles</span>
-      <div class="roles-grid">
-        @for (role of roles(); track role.id) {
-          <label class="role-check">
-            <input
-              type="checkbox"
-              [checked]="form().roleIds.includes(role.id)"
-              (change)="toggleRole(role.id, $any($event.target).checked)"
-            />
-            <span>{{ role.name }}</span>
-          </label>
-        }
-      </div>
-    </div>
-
-    <div class="panel-actions">
-      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
-      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
-        {{ saving() ? 'Guardando…' : 'Guardar' }}
-      </button>
+      }
     </div>
   </div>
+
+  <div class="panel-actions">
+    <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+    <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+      {{ saving() ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</div>
 }

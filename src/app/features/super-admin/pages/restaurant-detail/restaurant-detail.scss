@@ -1,0 +1,103 @@
+@use '../../../../shared/styles/admin-page' as *;
+
+.back-link {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+  margin-bottom: 14px;
+}
+.back-link:hover {
+  color: var(--ink);
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+
+  h2 {
+    font-size: 13px;
+    margin: 0 0 10px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+}
+
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.btn-secondary.danger {
+  color: #b3261e;
+  border-color: color-mix(in srgb, #b3261e 30%, var(--line));
+}
+.btn-secondary.danger:hover {
+  background: color-mix(in srgb, #b3261e 6%, white);
+}
+
+.current-plan {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+.sub-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.plan-change {
+  display: flex;
+  gap: 8px;
+
+  select {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+  }
+}
+
+.usage-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--ink-soft);
+
+    strong {
+      color: var(--ink);
+    }
+  }
+}
+
+.section {
+  h2 {
+    font-size: 15px;
+    margin: 0 0 14px;
+    font-weight: 700;
+  }
+}

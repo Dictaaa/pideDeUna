@@ -1,7 +1,7 @@
 <aside class="sidebar" [class.closed]="!isOpen()">
   <nav class="nav-list">
     @for (item of items(); track item.label) {
-      <a class="nav-item" [routerLink]="item.path" routerLinkActive="active">
+      <a class="nav-item" [routerLink]="item.path" routerLinkActive="active" (click)="itemSelected.emit()">
         <span class="nav-icon">{{ item.icon }}</span>
         <span class="nav-label">{{ item.label }}</span>
       </a>

@@ -1,19 +1,21 @@
 .sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   width: 220px;
-  flex: 0 0 auto;
   background: var(--surface);
   border-right: 1px solid var(--line);
   padding: 16px 12px;
-  overflow: hidden;
+  overflow-y: auto;
   white-space: nowrap;
-  transition: width 0.2s ease, padding 0.2s ease, opacity 0.2s ease;
+  z-index: 20;
+  box-shadow: 2px 0 14px rgba(0, 0, 0, 0.1);
+  transform: translateX(0);
+  transition: transform 0.2s ease;
 }
 .sidebar.closed {
-  width: 0;
-  padding-left: 0;
-  padding-right: 0;
-  opacity: 0;
-  border-right: none;
+  transform: translateX(-100%);
 }
 
 .nav-list {

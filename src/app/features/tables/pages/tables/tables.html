@@ -8,111 +8,120 @@
   </div>
 
   @if (loading()) {
-    <app-table-skeleton [rows]="5" [cols]="5"></app-table-skeleton>
+  <app-table-skeleton [rows]="5" [cols]="5"></app-table-skeleton>
   } @else if (tables().length === 0) {
-    <div class="empty-state">Todavía no tienes mesas. Crea la primera.</div>
+  <div class="empty-state">Todavía no tienes mesas. Crea la primera.</div>
   } @else {
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Mesa</th>
-          <th>Área</th>
-          <th>Capacidad</th>
-          <th>Estado</th>
-          <th>QR</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (t of tables(); track t.id) {
-          <tr>
-            <td class="cell-strong">{{ t.name || ('Mesa ' + t.tableNumber) }}</td>
-            <td class="cell-muted">{{ t.area?.name || '—' }}</td>
-            <td>{{ t.capacity }}</td>
-            <td><span class="badge">{{ statusLabel(t.status) }}</span></td>
-            <td class="cell-qr">
-              @if (activeToken(t)) {
-                <button type="button" class="link-btn" (click)="copyQrLink(t)">
-                  {{ qrCopiedId() === t.id ? '¡Copiado!' : 'Copiar link' }}
-                </button>
-                <button type="button" class="link-btn" (click)="regenerateQr(t)">Regenerar</button>
-              } @else {
-                <span class="cell-muted">Sin QR</span>
-              }
-            </td>
-            <td class="cell-actions">
-              <button type="button" class="link-btn" (click)="openEdit(t)">Editar</button>
-              <button type="button" class="link-btn danger" (click)="remove(t)">Eliminar</button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Mesa</th>
+        <th>Área</th>
+        <th>Capacidad</th>
+        <th>Estado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (t of tables(); track t.id) {
+      <tr>
+        <td class="cell-strong">{{ t.name || ('Mesa ' + t.tableNumber) }}</td>
+        <td class="cell-muted">{{ t.area?.name || '—' }}</td>
+        <td>{{ t.capacity }}</td>
+        <td><span class="badge" [class]="badgeClass(t.status)">{{ statusLabel(t.status) }}</span></td>
+        <td class="cell-actions">
+          <app-actions-menu [actions]="rowActions(t)"></app-actions-menu>
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
   }
 </div>
 
 @if (formOpen()) {
-  <div class="overlay" (click)="closeForm()"></div>
-  <div class="panel">
-    <h2>{{ editingId() ? 'Editar mesa' : 'Nueva mesa' }}</h2>
+<div class="overlay" (click)="closeForm()"></div>
+<div class="panel">
+  <h2>{{ editingId() ? 'Editar mesa' : 'Nueva mesa' }}</h2>
 
-    @if (errorMessage(); as msg) {
-      <div class="form-error">{{ msg }}</div>
-    }
+  @if (errorMessage(); as msg) {
+  <div class="form-error">{{ msg }}</div>
+  }
 
-    <div class="field-row">
-      <label class="field">
-        <span>Número de mesa</span>
-        <input
-          type="text"
-          [ngModel]="form().tableNumber"
-          (ngModelChange)="updateField('tableNumber', $event)"
-          name="tableNumber"
-        />
-      </label>
-      <label class="field">
-        <span>Capacidad</span>
-        <input
-          type="number"
-          min="1"
-          [ngModel]="form().capacity"
-          (ngModelChange)="updateField('capacity', $event)"
-          name="capacity"
-        />
-      </label>
-    </div>
-
+  <div class="field-row">
     <label class="field">
-      <span>Nombre (opcional)</span>
-      <input type="text" placeholder="Ej: Mesa de la ventana" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" name="name" />
+      <span>Número de mesa</span>
+      <input type="text" [ngModel]="form().tableNumber" (ngModelChange)="updateField('tableNumber', $event)"
+        name="tableNumber" />
     </label>
-
     <label class="field">
-      <span>Área</span>
-      <select [ngModel]="form().areaId" (ngModelChange)="updateField('areaId', $event)" name="areaId">
-        <option value="">Sin área</option>
-        @for (area of areas(); track area.id) {
-          <option [value]="area.id">{{ area.name }}</option>
-        }
-      </select>
+      <span>Capacidad</span>
+      <input type="number" min="1" [ngModel]="form().capacity" (ngModelChange)="updateField('capacity', $event)"
+        name="capacity" />
     </label>
-
-    @if (editingId()) {
-      <label class="field">
-        <span>Estado</span>
-        <select [ngModel]="form().status" (ngModelChange)="updateField('status', $event)" name="status">
-          @for (s of statuses; track s) {
-            <option [value]="s">{{ statusLabel(s) }}</option>
-          }
-        </select>
-      </label>
-    }
-
-    <div class="panel-actions">
-      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
-      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
-        {{ saving() ? 'Guardando…' : 'Guardar' }}
-      </button>
-    </div>
   </div>
+
+  <label class="field">
+    <span>Nombre (opcional)</span>
+    <input type="text" placeholder="Ej: Mesa de la ventana" [ngModel]="form().name"
+      (ngModelChange)="updateField('name', $event)" name="name" />
+  </label>
+
+  <label class="field">
+    <span>Área</span>
+    <select [ngModel]="form().areaId" (ngModelChange)="updateField('areaId', $event)" name="areaId">
+      <option value="">Sin área</option>
+      @for (area of areas(); track area.id) {
+      <option [value]="area.id">{{ area.name }}</option>
+      }
+    </select>
+  </label>
+
+  @if (editingId()) {
+  <label class="field">
+    <span>Estado</span>
+    <select [ngModel]="form().status" (ngModelChange)="updateField('status', $event)" name="status">
+      @for (s of statuses; track s) {
+      <option [value]="s">{{ statusLabel(s) }}</option>
+      }
+    </select>
+  </label>
+  }
+
+  <div class="panel-actions">
+    <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+    <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+      {{ saving() ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</div>
+}
+
+@if (qrPreviewTable(); as t) {
+<div class="overlay" (click)="closeQrPreview()"></div>
+<div class="qr-modal">
+  <h2>{{ t.name || ('Mesa ' + t.tableNumber) }}</h2>
+  <p class="qr-modal-sub">Descárgalo e imprímelo para pegarlo en la mesa.</p>
+
+  <div class="qr-image-wrap">
+    @if (qrGenerating()) {
+    <div class="qr-loading">Generando…</div>
+    } @else {
+    @if (qrPreviewImage(); as img) {
+    <img [src]="img" alt="Código QR de la mesa" />
+    }
+    }
+  </div>
+
+  <div class="panel-actions">
+    <button type="button" class="btn-secondary" (click)="closeQrPreview()">Cerrar</button>
+    <button type="button" class="btn-primary" [disabled]="!qrPreviewImage()" (click)="downloadQr(t)">
+      Descargar PNG
+    </button>
+  </div>
+</div>
+}
+
+@if (toastMessage(); as msg) {
+  <div class="toast-msg">{{ msg }}</div>
 }

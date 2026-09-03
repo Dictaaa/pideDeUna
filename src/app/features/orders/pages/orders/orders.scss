@@ -189,3 +189,26 @@
   justify-content: space-between;
   align-items: center;
 }
+
+.charge-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h3 {
+    font-size: 13px;
+    margin: 0;
+    font-weight: 700;
+  }
+}
+
+.waiting-note {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  text-align: center;
+  padding: 12px 0;
+  margin: 0;
+}

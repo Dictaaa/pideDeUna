@@ -4,13 +4,14 @@ import { ActivatedRoute } from '@angular/router';
 import { Category } from '../../services/category';
 import { AdminCategory, CategoryFormValue } from '../../models/category.models';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
+import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
 
 const EMPTY_FORM: CategoryFormValue = { name: '', description: '', sortOrder: 0, isActive: true };
 
 @Component({
   selector: 'app-categories',
   standalone: true,
-  imports: [FormsModule, TableSkeleton],
+  imports: [FormsModule, TableSkeleton, ActionsMenu],
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
 })
@@ -100,5 +101,16 @@ export class Categories {
   remove(cat: AdminCategory): void {
     if (!confirm(`¿Eliminar "${cat.name}"? Los productos que tenga quedan sin categoría.`)) return;
     this.categoryService.remove(this.slug, cat.id).subscribe({ next: () => this.reload() });
+  }
+
+  badgeClass(cat: AdminCategory): string {
+    return cat.isActive ? 'badge-success' : 'badge-neutral';
+  }
+
+  rowActions(cat: AdminCategory): RowAction[] {
+    return [
+      { label: 'Editar', icon: '✏️', handler: () => this.openEdit(cat) },
+      { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(cat), danger: true },
+    ];
   }
 }

@@ -1,0 +1,98 @@
+<div class="page">
+  <a routerLink="/super-admin/restaurantes" class="back-link">← Restaurantes</a>
+
+  @if (loading()) {
+    <div class="state-message">Cargando…</div>
+  } @else if (detail(); as d) {
+    <div class="page-head">
+      <div>
+        <h1>{{ d.restaurant.name }}</h1>
+        <p>{{ d.restaurant.slug }} · {{ d.restaurant.city || 'Sin ciudad' }}</p>
+      </div>
+      <a [routerLink]="['/admin', d.restaurant.slug, 'dashboard']" class="btn-secondary" target="_blank">
+        Ir al panel de este restaurante ↗
+      </a>
+    </div>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <div class="cards-grid">
+      <section class="card">
+        <h2>Estado</h2>
+        <span [class]="badgeClass(d.restaurant.status)">{{ statusLabel(d.restaurant.status) }}</span>
+        <div class="status-actions">
+          @if (d.restaurant.status !== 'active') {
+            <button type="button" class="btn-secondary" [disabled]="changingStatus()" (click)="changeStatus('active')">Activar</button>
+          }
+          @if (d.restaurant.status !== 'suspended') {
+            <button type="button" class="btn-secondary danger" [disabled]="changingStatus()" (click)="changeStatus('suspended')">Suspender</button>
+          }
+          @if (d.restaurant.status !== 'cancelled') {
+            <button type="button" class="btn-secondary danger" [disabled]="changingStatus()" (click)="changeStatus('cancelled')">Cancelar</button>
+          }
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Plan</h2>
+        @if (d.subscription) {
+          <p class="current-plan">
+            {{ d.subscription.plan.name }} — {{ '$' + (+d.subscription.plan.priceMonthly | number: '1.0-0') }}/mes
+            <span class="sub-status">({{ d.subscription.status }})</span>
+          </p>
+        } @else {
+          <p class="current-plan">Sin suscripción</p>
+        }
+
+        <div class="plan-change">
+          <select [ngModel]="selectedPlanId()" (ngModelChange)="selectedPlanId.set($event)" name="planId">
+            @for (p of plans(); track p.id) {
+              <option [value]="p.id">{{ p.name }}</option>
+            }
+          </select>
+          <button type="button" class="btn-primary" [disabled]="changingPlan()" (click)="changePlan()">
+            {{ changingPlan() ? 'Cambiando…' : 'Cambiar plan' }}
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Uso</h2>
+        <ul class="usage-list">
+          <li><span>Categorías</span><strong>{{ d.usage.categories }}</strong></li>
+          <li><span>Productos</span><strong>{{ d.usage.products }}</strong></li>
+          <li><span>Mesas</span><strong>{{ d.usage.tables }}</strong></li>
+          <li><span>Usuarios</span><strong>{{ d.usage.users }}</strong></li>
+          <li><span>Fotos</span><strong>{{ d.usage.photos }}</strong></li>
+          <li><span>Videos</span><strong>{{ d.usage.videos }}</strong></li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="section">
+      <h2>Usuarios ({{ d.users.length }})</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Roles</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of d.users; track u.id) {
+            <tr>
+              <td class="cell-strong">{{ u.name }}</td>
+              <td class="cell-muted">{{ u.email }}</td>
+              <td class="cell-muted">{{ u.roles.map((r) => r.name).join(', ') || '—' }}</td>
+              <td><span [class]="badgeClass(u.status)">{{ u.status }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</div>

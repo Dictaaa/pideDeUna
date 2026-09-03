@@ -4,13 +4,14 @@ import { ActivatedRoute } from '@angular/router';
 import { AreaAdmin } from '../../../area/services/area-admin';
 import { AdminArea, AreaFormValue } from '../../../area/models/area.models';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
+import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
 
 const EMPTY_FORM: AreaFormValue = { name: '', description: '', sortOrder: 0, status: 'active' };
 
 @Component({
   selector: 'app-areas',
   standalone: true,
-  imports: [FormsModule, TableSkeleton],
+  imports: [FormsModule, TableSkeleton, ActionsMenu],
   templateUrl: './areas.html',
   styleUrl: './areas.scss',
 })
@@ -98,5 +99,16 @@ export class Areas {
   remove(area: AdminArea): void {
     if (!confirm(`¿Eliminar "${area.name}"? Las mesas que la tengan asignada se quedan sin área.`)) return;
     this.areaService.remove(this.slug, area.id).subscribe({ next: () => this.reload() });
+  }
+
+   badgeClass(area: AdminArea): string {
+    return area.status === 'active' ? 'badge-success' : 'badge-neutral';
+  }
+
+  rowActions(area: AdminArea): RowAction[] {
+    return [
+      { label: 'Editar', icon: '✏️', handler: () => this.openEdit(area) },
+      { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(area), danger: true },
+    ];
   }
 }

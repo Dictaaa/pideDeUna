@@ -150,15 +150,41 @@
         </div>
       </div>
 
+            @if (order.status === 'READY') {
+        <div class="charge-box">
+          <h3>Cobrar y finalizar</h3>
+          <label class="field">
+            <span>Método de pago</span>
+            <select [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)" name="paymentMethod">
+              @for (m of paymentMethods; track m.value) {
+                <option [value]="m.value">{{ m.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>Número de factura / referencia (opcional)</span>
+            <input
+              type="text"
+              placeholder="Ej: el que dio el datáfono, Wompi o ePayco"
+              [ngModel]="paymentReference()"
+              (ngModelChange)="paymentReference.set($event)"
+              name="paymentReference"
+            />
+          </label>
+        </div>
+      } @else {
+        <p class="waiting-note">Esperando a que cocina lo marque como listo…</p>
+      }
+
       <div class="panel-actions panel-actions-spread">
         <button type="button" class="link-btn danger" (click)="cancelOrder(order)">Cancelar pedido</button>
         <button
           type="button"
           class="btn-primary"
-          [disabled]="order.status !== 'READY'"
-          (click)="serveOrder(order)"
+          [disabled]="order.status !== 'READY' || charging()"
+          (click)="confirmCharge(order)"
         >
-          {{ order.status === 'READY' ? 'Marcar como entregado' : 'Esperando a cocina…' }}
+          {{ charging() ? 'Registrando…' : 'Confirmar cobro' }}
         </button>
       </div>
       }

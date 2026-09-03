@@ -4,15 +4,21 @@ import { ActivatedRoute } from '@angular/router';
 import { UserAdmin } from '../../services/user-admin';
 import { AdminRole, AdminUser, USER_STATUSES, UserFormValue } from '../../models/user.models';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
+import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
 
 const EMPTY_FORM: UserFormValue = { name: '', email: '', phone: '', status: 'active', password: '', roleIds: [] };
 
 const STATUS_LABELS: Record<string, string> = { active: 'Activo', inactive: 'Inactivo', suspended: 'Suspendido' };
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  active: 'badge-success',
+  inactive: 'badge-neutral',
+  suspended: 'badge-danger',
+};
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [FormsModule, TableSkeleton],
+  imports: [FormsModule, TableSkeleton, ActionsMenu],
   templateUrl: './users.html',
   styleUrl: './users.scss',
 })
@@ -23,6 +29,7 @@ export class Users {
   slug = this.route.parent!.snapshot.paramMap.get('slug')!;
   statuses = USER_STATUSES;
   statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
+  badgeClass = (s: string) => STATUS_BADGE_CLASS[s] ?? 'badge-neutral';
 
   loading = signal(true);
   users = signal<AdminUser[]>([]);
@@ -144,5 +151,12 @@ export class Users {
   remove(user: AdminUser): void {
     if (!confirm(`¿Eliminar a "${user.name}"?`)) return;
     this.userService.remove(this.slug, user.id).subscribe({ next: () => this.reload() });
+  }
+
+    rowActions(user: AdminUser): RowAction[] {
+    return [
+      { label: 'Editar', icon: '✏️', handler: () => this.openEdit(user) },
+      { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(user), danger: true },
+    ];
   }
 }
