@@ -2,9 +2,39 @@
 
 <div class="sheet" [class.open]="isOpen()">
   @if (product(); as p) {
-    <div class="sheet-img-wrap">
-      @if (thumbUrl()) {
-        <img class="sheet-img" [src]="thumbUrl()" [alt]="p.name" />
+    <div class="sheet-img-wrap" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
+      @if (sortedMedia().length > 0) {
+        @if (currentMedia(); as m) {
+          <div class="media-stage">
+            @if (m.mediaType === 'VIDEO') {
+              <video class="media-bg" [src]="m.url" muted loop autoplay playsinline></video>
+              <video class="media-fg" [src]="m.url" muted loop autoplay playsinline [attr.aria-label]="p.name"></video>
+            } @else {
+              <img class="media-bg" [src]="m.url" alt="" aria-hidden="true" />
+              <img class="media-fg" [src]="m.url" [alt]="m.altText || p.name" />
+            }
+          </div>
+        }
+        @if (hasCarousel()) {
+          <button type="button" class="carousel-arrow left" (click)="prevSlide()" aria-label="Foto anterior">‹</button>
+          <button type="button" class="carousel-arrow right" (click)="nextSlide()" aria-label="Foto siguiente">›</button>
+          <div class="carousel-dots">
+            @for (m2 of sortedMedia(); track m2.id; let i = $index) {
+              <button
+                type="button"
+                class="dot"
+                [class.active]="i === activeMediaIndex()"
+                (click)="goToSlide(i)"
+                [attr.aria-label]="'Ir a la foto ' + (i + 1)"
+              ></button>
+            }
+          </div>
+        }
+      } @else if (fallbackImageUrl()) {
+        <div class="media-stage">
+          <img class="media-bg" [src]="fallbackImageUrl()" alt="" aria-hidden="true" />
+          <img class="media-fg" [src]="fallbackImageUrl()" [alt]="p.name" />
+        </div>
       } @else {
         <div class="sheet-img placeholder"></div>
       }
@@ -37,7 +67,7 @@
               {{ group.required ? 'Obligatorio' : 'Hasta ' + group.maxSelections }}
             </span>
           </div>
-          @for (opt of group.options; track opt.id) {
+          @for (opt of group.options ?? []; track opt.id) {
             <div
               class="option-row"
               [class.selected]="isSelected(group.id, opt.id)"

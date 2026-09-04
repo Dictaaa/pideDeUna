@@ -1,6 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { SuperAdminService } from '../../services/super-admin.service';
 import { RestaurantListItem, CreateRestaurantPayload } from '../../models/super-admin.models';
@@ -34,7 +33,7 @@ const EMPTY_FORM: CreateRestaurantPayload = {
 @Component({
   selector: 'app-sa-restaurants',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, ActionsMenu, TableSkeleton],
+  imports: [FormsModule, ActionsMenu, TableSkeleton],
   templateUrl: './restaurants.html',
   styleUrl: './restaurants.scss',
 })

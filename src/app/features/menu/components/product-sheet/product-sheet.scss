@@ -33,18 +33,96 @@
 
 .sheet-img-wrap {
   position: relative;
+  touch-action: pan-y;
 }
-.sheet-img {
+
+/* El "escenario": una capa de fondo desenfocada llenando todo el
+   cuadro (para que nunca se vean franjas vacías), y encima la foto o
+   el video completo, sin recortar — así nunca se pierde parte del
+   plato, sea vertical, horizontal o cuadrado. */
+.media-stage {
+  position: relative;
   width: 100%;
-  height: 200px;
-  object-fit: cover;
-  display: block;
+  height: 420px;
+  overflow: hidden;
   border-radius: 20px 20px 0 0;
+  background: #0c0c0c;
+}
+.media-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(28px) brightness(0.55);
+  transform: scale(1.15); /* esconde el borde nítido que deja el blur */
+}
+.media-fg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.sheet-img.placeholder {
+  height: 420px;
+  border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
-.sheet-img.placeholder {
-  border-bottom: 1px solid var(--line);
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
+.carousel-arrow.left {
+  left: 12px;
+}
+.carousel-arrow.right {
+  right: 12px;
+}
+.carousel-arrow:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, width 0.15s ease;
+}
+.dot.active {
+  background: #fff;
+  width: 16px;
+  border-radius: 3px;
+}
+
 .sheet-close {
   position: absolute;
   top: 12px;
@@ -59,6 +137,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
 
 .sheet-body {
