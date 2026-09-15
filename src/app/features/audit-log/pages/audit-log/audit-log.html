@@ -1,0 +1,73 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Auditoría</h1>
+      <p>Quién hizo qué — usuarios, configuración, y pedidos cancelados. Solo lectura.</p>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <label class="field">
+      <span>Tipo de entidad</span>
+      <select [ngModel]="entityTypeFilter()" (ngModelChange)="entityTypeFilter.set($event)" name="entityTypeFilter">
+        <option value="">Todas</option>
+        @for (t of entityTypeOptions; track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+    </label>
+    <button type="button" class="btn-primary" (click)="applyFilter()">Filtrar</button>
+    <button type="button" class="btn-secondary" (click)="clearFilter()">Limpiar</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="6" [cols]="4"></app-table-skeleton>
+  } @else if (logs().length === 0) {
+    <div class="empty-state">No hay registros todavía.</div>
+  } @else {
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Quién</th>
+            <th>Acción</th>
+            <th>Entidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of logs(); track log.id) {
+            <tr class="clickable-row" (click)="openDetail(log)">
+              <td class="cell-muted">{{ formatDate(log.createdAt) }}</td>
+              <td class="cell-strong">{{ actorName(log) }}</td>
+              <td>{{ actionLabel(log.action) }}</td>
+              <td class="cell-muted">{{ log.entityType }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (selectedLog(); as log) {
+  <div class="overlay" (click)="closeDetail()"></div>
+  <div class="panel">
+    <h2>{{ actionLabel(log.action) }}</h2>
+    <p class="panel-sub">{{ formatDate(log.createdAt) }} · {{ actorName(log) }}</p>
+
+    <div class="field">
+      <span>Antes</span>
+      <pre class="values-block">{{ formatValues(log.oldValues) }}</pre>
+    </div>
+
+    <div class="field">
+      <span>Después</span>
+      <pre class="values-block">{{ formatValues(log.newValues) }}</pre>
+    </div>
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeDetail()">Cerrar</button>
+    </div>
+  </div>
+}

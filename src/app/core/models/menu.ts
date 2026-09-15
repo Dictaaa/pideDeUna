@@ -1,6 +1,3 @@
-// Reflejan uno a uno el JSON que devuelve pidedeuna-api en
-// GET /api/restaurantes/:slug/menu — ver menu.controller.js del backend.
-
 export interface Restaurant {
   id: string;
   name: string;
@@ -9,6 +6,7 @@ export interface Restaurant {
   logoUrl: string | null;
   coverUrl: string | null;
   city: string | null;
+  nit: string | null;
   currency: string;
   primaryColor: string;
   secondaryColor: string;
@@ -62,6 +60,7 @@ export interface Product {
   description: string | null;
   shortDescription: string | null;
   price: string;
+  compareAtPrice: string | null;
   imageUrl: string | null;
   isAvailable: boolean;
   isFeatured: boolean;
@@ -83,9 +82,30 @@ export interface MenuCategory {
   products: Product[];
 }
 
+export interface PromotionProduct {
+  id: string;
+  name: string;
+  price: string;
+  imageUrl: string | null;
+}
+
+export interface Promotion {
+  id: string;
+  name: string;
+  description: string | null;
+  promoType: 'percentage' | 'fixed_amount' | 'buy_x_get_y' | 'combo';
+  percentage: string | null;
+  fixedAmount: string | null;
+  buyQuantity: number | null;
+  getQuantity: number | null;
+  imageUrl: string | null;
+  products: PromotionProduct[];
+}
+
 export interface RestaurantMenuResponse {
   restaurant: Restaurant;
   categories: MenuCategory[];
+  promotions: Promotion[];
 }
 
 /* ----------------------------------------------------------
@@ -107,5 +127,21 @@ export interface CartLine {
   imageUrl: string | null;
   unitPrice: number; // precio base + modificadores
   quantity: number;
+  notes: string;
   modifiers: SelectedModifier[];
+}
+
+export interface CartComboSelection {
+  productId: string;
+  productName: string;
+  quantity: number;
+}
+
+export interface CartCombo {
+  comboId: string;
+  promotionId: string;
+  promotionName: string;
+  selections: CartComboSelection[];
+  totalPrice: number;
+  notes: string;
 }

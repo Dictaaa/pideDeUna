@@ -41,6 +41,7 @@ export class Tables {
   private route = inject(ActivatedRoute);
   private tableService = inject(TableAdmin);
 
+  togglingSessionId = signal<string | null>(null);
   slug = this.route.parent!.snapshot.paramMap.get('slug')!;
   statuses = TABLE_STATUSES;
   statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
@@ -194,6 +195,11 @@ export class Tables {
 
     if (this.activeToken(table)) {
       actions.push(
+      {
+        label: table.hasOpenSession ? '🔴 Cerrar mesa (dejar de recibir pedidos)' : '🟢 Abrir mesa (permitir pedir)',
+        icon: table.hasOpenSession ? '🔴' : '🟢',
+        handler: () => this.toggleSession(table),
+      },
         { label: 'Ver QR', icon: '📱', handler: () => this.openQrPreview(table) },
         { label: 'Copiar link', icon: '🔗', handler: () => this.copyQrLink(table) },
         { label: 'Regenerar QR', icon: '🔄', handler: () => this.regenerateQr(table) }
@@ -207,4 +213,34 @@ export class Tables {
 
     return actions;
   }
+
+ toggleSession(table: AdminTable): void {
+  this.togglingSessionId.set(table.id);
+
+  if (table.hasOpenSession) {
+    this.tableService.closeSession(this.slug, table.id).subscribe({
+      next: () => {
+        this.togglingSessionId.set(null);
+        this.showToast('Mesa cerrada — ya no se puede pedir');
+        this.reload();
+      },
+      error: () => {
+        this.togglingSessionId.set(null);
+      },
+    });
+
+    return;
+  }
+
+  this.tableService.openSession(this.slug, table.id).subscribe({
+    next: () => {
+      this.togglingSessionId.set(null);
+      this.showToast('Mesa abierta — ya se puede pedir');
+      this.reload();
+    },
+    error: () => {
+      this.togglingSessionId.set(null);
+    },
+  });
+}
 }

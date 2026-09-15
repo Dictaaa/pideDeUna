@@ -9,6 +9,7 @@
   max-width: 1000px;
   margin: 0 auto;
   padding: 28px 28px 60px;
+  overflow-x: hidden; // así ningún hijo ancho (como la tabla) puede empujar la página entera
 }
 
 .page-head {
@@ -102,8 +103,19 @@
 
 // ── Tabla ──────────────────────────────────────────────────
 
+// El scroll va en este wrapper, no en .table directamente — así el
+// borde redondeado y el encabezado pegajoso de la tabla no se ven
+// afectados, y en celular se puede deslizar el dedo para ver las
+// columnas que no caben en el ancho de la pantalla.
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .table {
   width: 100%;
+  min-width: 640px; // evita que las columnas se compriman feo antes de activar el scroll
   border-collapse: collapse;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -150,6 +162,10 @@
 }
 
 // ── Badges de estado ─────────────────────────────────────────
+// .badge = tono neutro por defecto (usa el color de marca). Las
+// variantes de abajo son semánticas — mismo significado sin importar
+// qué color de marca haya elegido el restaurante (verde = bien,
+// rojo = mal, ámbar = en espera, azul = en curso, morado/teal = extra).
 
 .badge {
   display: inline-block;

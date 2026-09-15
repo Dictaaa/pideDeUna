@@ -1,0 +1,213 @@
+.tracking-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--surface, #fafafa);
+  font-family: var(--font, system-ui, sans-serif);
+}
+
+.state-message {
+  font-size: 14px;
+  color: var(--ink-soft, #6b6b6b);
+  text-align: center;
+}
+.state-message.error {
+  color: #b3261e;
+}
+
+.tracking-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.tracking-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 26px;
+}
+.tracking-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.tracking-logo-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+.tracking-restaurant-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft, #6b6b6b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tracking-header h1 {
+  font-size: 17px;
+  margin: 4px 0 0;
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface, #fafafa);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.progress-fill {
+  height: 100%;
+  width: 16.66%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  transition: width 0.6s ease;
+}
+.progress-fill.step-2 {
+  width: 50%;
+}
+.progress-fill.step-3 {
+  width: 100%;
+}
+
+.stages {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.35;
+  transition: opacity 0.3s ease;
+}
+.stage.active {
+  opacity: 1;
+}
+.stage-icon {
+  font-size: 30px;
+  display: inline-block;
+}
+.stage-icon.bounce {
+  animation: stage-bounce 1s ease-in-out infinite;
+}
+.stage-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft, #6b6b6b);
+}
+.stage.active .stage-label {
+  color: var(--primary-ink, #7a3a00);
+}
+
+@keyframes stage-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.stage-message {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft, #6b6b6b);
+  margin: 0 0 22px;
+  min-height: 18px;
+}
+.stage-message.ready {
+  color: #1f6b41;
+  font-weight: 800;
+  animation: ready-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ready-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.cancelled-box {
+  padding: 30px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cancelled-icon {
+  font-size: 40px;
+}
+
+.order-summary {
+  text-align: left;
+  border-top: 1px solid var(--line, #e6e6e6);
+  padding-top: 18px;
+  margin-top: 4px;
+}
+.order-summary h2 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint, #9c9c9c);
+  margin: 0 0 10px;
+}
+.summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.summary-item-row {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.summary-item-notes {
+  font-size: 11.5px;
+  color: var(--ink-faint, #9c9c9c);
+  font-style: italic;
+  padding-left: 4px;
+  margin-top: -2px;
+}
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 800;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line, #e6e6e6);
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 22px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft, #6b6b6b);
+  text-decoration: none;
+}

@@ -38,6 +38,12 @@ export class Settings {
   secondaryColor = signal('#FFC02E');
   fontFamily = signal('inter');
 
+  // Datos de facturación — el NIT vive en el perfil; el impuesto y la
+  // propina viven en RestaurantSettings junto a los demás toggles.
+  nit = signal('');
+  savingNit = signal(false);
+  nitSaved = signal(false);
+
   uploadingLogo = signal(false);
   logoError = signal<string | null>(null);
 
@@ -56,6 +62,7 @@ export class Settings {
         this.primaryColor.set(r.primaryColor);
         this.secondaryColor.set(r.secondaryColor);
         this.fontFamily.set(r.fontFamily);
+        this.nit.set(r.nit ?? '');
       },
     });
   }
@@ -68,6 +75,31 @@ export class Settings {
     const current = this.settings();
     if (!current) return;
     this.settings.set({ ...current, [key]: value });
+  }
+
+  /** Para los campos numéricos/texto de facturación (taxLabel, taxRate, tipRate) — no son on/off como los toggles. */
+  setSettingField<K extends keyof RestaurantSettings>(key: K, value: RestaurantSettings[K]): void {
+    const current = this.settings();
+    if (!current) return;
+    this.settings.set({ ...current, [key]: value });
+  }
+
+  saveNit(): void {
+    this.savingNit.set(true);
+    this.errorMessage.set(null);
+
+    this.settingsService.updateNit(this.slug, this.nit().trim()).subscribe({
+      next: (r) => {
+        this.restaurant.set(r);
+        this.savingNit.set(false);
+        this.nitSaved.set(true);
+        setTimeout(() => this.nitSaved.set(false), 1800);
+      },
+      error: (err) => {
+        this.savingNit.set(false);
+        this.errorMessage.set(err?.error?.error || 'No se pudo guardar el NIT.');
+      },
+    });
   }
 
   saveSettings(): void {

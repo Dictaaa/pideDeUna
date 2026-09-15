@@ -1,29 +1,45 @@
 import { CurrencyPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
-import { ModifierGroup, ModifierOption, Product, ProductMedia, SelectedModifier } from '../../../../core/models/menu';
+import { ModifierGroup, ModifierOption, Product, ProductMedia, Promotion, SelectedModifier } from '../../../../core/models/menu';
 import { FoodBurstService } from '../../../../shared/services/food-burst';
+
+export interface AddedComboPayload {
+  promotion: Promotion;
+  selections: { productId: string; productName: string; quantity: number }[];
+  notes: string;
+}
 
 @Component({
   selector: 'app-product-sheet',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, FormsModule],
   templateUrl: './product-sheet.html',
   styleUrl: './product-sheet.scss',
 })
 export class ProductSheet {
   private foodBurst = inject(FoodBurstService);
 
-  /** null = hoja cerrada */
+  /** null = no se está mostrando un producto normal */
   product = input<Product | null>(null);
+  /** null = no se está mostrando un combo — product y combo son excluyentes, el que esté abierto es el que no es null */
+  combo = input<Promotion | null>(null);
 
   closed = output<void>();
-  addedToCart = output<{ product: Product; modifiers: SelectedModifier[]; quantity: number }>();
+  addedToCart = output<{ product: Product; modifiers: SelectedModifier[]; quantity: number; notes: string }>();
+  addedCombo = output<AddedComboPayload>();
 
   quantity = signal(1);
-  /** groupId -> Set de optionId seleccionados */
+  notes = signal('');
+  /** groupId -> Set de optionId seleccionados (para un producto normal) */
   selection = signal<Record<string, Set<string>>>({});
 
-  isOpen = computed(() => this.product() !== null);
+  /** productId -> cantidad elegida (para armar un combo) */
+  comboSelections = signal<Record<string, number>>({});
+  comboNotes = signal('');
+  comboTotalSelected = computed(() => Object.values(this.comboSelections()).reduce((a, b) => a + b, 0));
+
+  isOpen = computed(() => this.product() !== null || this.combo() !== null);
 
   /** Foto principal primero, luego el resto en su orden — así el carrusel abre en la misma foto que ya se ve en la tarjeta. */
   sortedMedia = computed<ProductMedia[]>(() => {
@@ -52,10 +68,6 @@ export class ProductSheet {
     for (const group of p.modifierGroups ?? []) {
       const chosen = sel[group.id] ?? new Set<string>();
       if (!Array.isArray(group.options)) {
-        // Esto NO debería pasar con el API real (lo probamos: siempre
-        // devuelve options: [] como mínimo). Si ves este mensaje, el
-        // producto/grupo que se está abriendo no vino del backend real
-        // o se construyó a mano en algún lado sin ese campo.
         console.warn(
           `[ProductSheet] El grupo "${group.name}" del producto "${p.name}" llegó sin "options". Revisa el origen de estos datos.`,
           group
@@ -72,25 +84,46 @@ export class ProductSheet {
   grandTotal = computed(() => this.unitTotal() * this.quantity());
 
   constructor() {
-    // Cada vez que cambia el producto mostrado, reinicia cantidad y
-    // preselecciona la primera opción de los grupos "radio" obligatorios.
+    // Un solo efecto para los dos casos — cada vez que se abre un
+    // producto O un combo, se reinicia todo el estado (cantidad,
+    // observaciones, selección) para que no quede nada de lo anterior.
     effect(() => {
       const p = this.product();
+      const c = this.combo();
+
       this.quantity.set(1);
+      this.notes.set('');
+      this.comboNotes.set('');
       this.activeMediaIndex.set(0);
-      if (!p) {
+
+      if (p) {
+        const initial: Record<string, Set<string>> = {};
+        for (const group of p.modifierGroups ?? []) {
+          const firstOption = Array.isArray(group.options) ? group.options[0] : undefined;
+          initial[group.id] =
+            group.maxSelections === 1 && group.required && firstOption
+              ? new Set([firstOption.id])
+              : new Set();
+        }
+        this.selection.set(initial);
+      } else {
         this.selection.set({});
-        return;
       }
-      const initial: Record<string, Set<string>> = {};
-      for (const group of p.modifierGroups ?? []) {
-        const firstOption = Array.isArray(group.options) ? group.options[0] : undefined;
-        initial[group.id] =
-          group.maxSelections === 1 && group.required && firstOption
-            ? new Set([firstOption.id])
-            : new Set();
+
+      if (c) {
+        const initial: Record<string, number> = {};
+        if (c.products.length === 1) {
+          // Un solo producto: no hay nada que elegir, se preselecciona
+          // completo — el selector igual se muestra, solo para poder
+          // agregar una observación antes de confirmar.
+          initial[c.products[0].id] = c.buyQuantity ?? 0;
+        } else {
+          for (const cp of c.products) initial[cp.id] = 0;
+        }
+        this.comboSelections.set(initial);
+      } else {
+        this.comboSelections.set({});
       }
-      this.selection.set(initial);
     });
   }
 
@@ -146,7 +179,6 @@ export class ProductSheet {
     this.touchStartX = event.touches[0].clientX;
   }
 
-  /** Deslizar con el dedo en el celular — el umbral evita que un toque normal se confunda con swipe. */
   onTouchEnd(event: TouchEvent): void {
     const deltaX = event.changedTouches[0].clientX - this.touchStartX;
     if (Math.abs(deltaX) < 40) return;
@@ -168,6 +200,43 @@ export class ProductSheet {
       }
     }
     this.foodBurst.trigger(event.currentTarget as HTMLElement);
-    this.addedToCart.emit({ product: p, modifiers, quantity: this.quantity() });
+    this.addedToCart.emit({ product: p, modifiers, quantity: this.quantity(), notes: this.notes().trim() });
+  }
+
+  // ---------------- Combo ----------------
+
+  comboQuantityFor(productId: string): number {
+    return this.comboSelections()[productId] ?? 0;
+  }
+
+  incrementComboQty(productId: string): void {
+    const c = this.combo();
+    if (!c || this.comboTotalSelected() >= (c.buyQuantity ?? 0)) return;
+    this.comboSelections.update((s) => ({ ...s, [productId]: (s[productId] ?? 0) + 1 }));
+  }
+
+  decrementComboQty(productId: string): void {
+    this.comboSelections.update((s) => {
+      const current = s[productId] ?? 0;
+      if (current <= 0) return s;
+      return { ...s, [productId]: current - 1 };
+    });
+  }
+
+  confirmCombo(event: Event): void {
+    const c = this.combo();
+    if (!c || this.comboTotalSelected() !== c.buyQuantity) return;
+
+    const productMap = new Map(c.products.map((p) => [p.id, p]));
+    const selections = Object.entries(this.comboSelections())
+      .filter(([, qty]) => qty > 0)
+      .map(([productId, quantity]) => ({
+        productId,
+        productName: productMap.get(productId)?.name ?? '',
+        quantity,
+      }));
+
+    this.foodBurst.trigger(event.currentTarget as HTMLElement);
+    this.addedCombo.emit({ promotion: c, selections, notes: this.comboNotes().trim() });
   }
 }

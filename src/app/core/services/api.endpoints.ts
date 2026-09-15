@@ -13,6 +13,8 @@ export const API = {
     // Login único de la plataforma: solo correo y contraseña (el email
     // es único globalmente). Sirve tanto para staff como para SUPER_ADMIN.
     LOGIN: `${BASE}/auth/login`,
+    FORGOT_PASSWORD: `${BASE}/auth/forgot-password`,
+    RESET_PASSWORD: `${BASE}/auth/reset-password`,
     // Registro público: crea el restaurante + su primer admin, y loguea de una.
     REGISTER: `${BASE}/restaurantes/register`,
   },
@@ -23,6 +25,19 @@ export const API = {
     UPDATE_PROFILE: (slug: string) => `${BASE}/restaurantes/${slug}`,
     UPLOAD_LOGO: (slug: string) => `${BASE}/restaurantes/${slug}/logo`,
     MENU: (slug: string) => `${BASE}/restaurantes/${slug}/menu`,
+  },
+
+   // ── Sesión de mesa (abrir/cerrar para permitir pedir) ────
+  TABLE_SESSION: {
+    OPEN: (slug: string, tableId: string) => `${BASE}/restaurantes/${slug}/tables/${tableId}/open-session`,
+    CLOSE: (slug: string, tableId: string) => `${BASE}/restaurantes/${slug}/tables/${tableId}/close-session`,
+  },
+
+  // ── Pedido público del cliente (sin login, con el token del QR) ──
+  PUBLIC_ORDER: {
+    SESSION_INFO: (slug: string, token: string) => `${BASE}/restaurantes/${slug}/mesa/${token}`,
+    CREATE: (slug: string, token: string) => `${BASE}/restaurantes/${slug}/mesa/${token}/pedido`,
+    STATUS: (slug: string, orderId: string) => `${BASE}/restaurantes/${slug}/pedidos-publicos/${orderId}/estado`,
   },
 
   // ── Categorías del menú ─────────────────────────────────
@@ -67,6 +82,15 @@ export const API = {
     ADD_OPTION: (slug: string, groupId: string) => `${BASE}/restaurantes/${slug}/modifier-groups/${groupId}/options`,
     OPTION: (slug: string, groupId: string, optionId: string) =>
       `${BASE}/restaurantes/${slug}/modifier-groups/${groupId}/options/${optionId}`,
+  },
+
+  // ── Promociones (combos) ─────────────────────────────────
+  PROMOTIONS: {
+    LIST: (slug: string) => `${BASE}/restaurantes/${slug}/promotions`,
+    CREATE: (slug: string) => `${BASE}/restaurantes/${slug}/promotions`,
+    BY_ID: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/promotions/${id}`,
+    SET_PRODUCTS: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/promotions/${id}/products`,
+    UPLOAD_IMAGE: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/promotions/${id}/image`,
   },
 
   // ── Usuarios (staff del restaurante) ────────────────────
@@ -134,11 +158,14 @@ export const API = {
     LIST: (slug: string) => `${BASE}/restaurantes/${slug}/orders`,
     CREATE: (slug: string) => `${BASE}/restaurantes/${slug}/orders`,
     ADD_ITEM: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/orders/${id}/items`,
+    ADD_COMBO: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/orders/${id}/items/combo`,
     REMOVE_ITEM: (slug: string, id: string, itemId: string) =>
       `${BASE}/restaurantes/${slug}/orders/${id}/items/${itemId}`,
     CANCEL: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/orders/${id}/cancel`,
     ADVANCE: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/orders/${id}/advance`,
     SERVE: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/orders/${id}/serve`,
+    CHARGE: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/orders/${id}/charge`,
+    INVOICE: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/orders/${id}/invoice`,
   },
 
   // ── Clientes ─────────────────────────────────────────────
@@ -155,14 +182,6 @@ export const API = {
     BY_ID: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/reservations/${id}`,
   },
 
-  // ── Promociones ──────────────────────────────────────────
-  PROMOTIONS: {
-    LIST: (slug: string) => `${BASE}/restaurantes/${slug}/promotions`,
-    CREATE: (slug: string) => `${BASE}/restaurantes/${slug}/promotions`,
-    BY_ID: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/promotions/${id}`,
-    SET_PRODUCTS: (slug: string, id: string) => `${BASE}/restaurantes/${slug}/promotions/${id}/products`,
-  },
-
   // ── Reviews ──────────────────────────────────────────────
   REVIEWS: {
     LIST: (slug: string) => `${BASE}/restaurantes/${slug}/reviews`,
@@ -175,8 +194,8 @@ export const API = {
     UPDATE: (slug: string) => `${BASE}/restaurantes/${slug}/settings`,
   },
 
-  // ── Auditoría (solo lectura) ─────────────────────────────
-  AUDIT_LOGS: {
+  // ── Auditoría (solo admin/super admin) ──────────────────
+  AUDIT_LOG: {
     LIST: (slug: string) => `${BASE}/restaurantes/${slug}/audit-logs`,
   },
 } as const;

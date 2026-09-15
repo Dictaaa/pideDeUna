@@ -1,0 +1,108 @@
+@use '../../../../shared/styles/admin-page' as *;
+
+.groups-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.group-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+}
+
+.group-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+
+  h2 {
+    font-size: 15px;
+    margin: 0 0 2px;
+    font-weight: 700;
+  }
+}
+.group-meta {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+.group-card-actions {
+  display: flex;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.option-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+.option-name {
+  flex: 1;
+}
+.option-price {
+  font-weight: 700;
+  color: var(--primary-ink);
+  white-space: nowrap;
+}
+.no-options {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin: 6px 0;
+}
+
+.add-option-link {
+  font-size: 12.5px;
+}
+
+.add-option-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+
+  input {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+
+    &:first-child {
+      flex: 1;
+    }
+    &:nth-child(2) {
+      width: 100px;
+    }
+  }
+}
+
+.draft-options {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.draft-options-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}

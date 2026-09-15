@@ -10,6 +10,9 @@ export interface RestaurantSettings {
   showVideos: boolean;
   showAllergens: boolean;
   showIngredients: boolean;
+  taxLabel: string | null;
+  taxRate: number;
+  tipRate: number;
 }
 
 export const SETTINGS_TOGGLES: { key: keyof Omit<RestaurantSettings, 'restaurantId'>; label: string }[] = [

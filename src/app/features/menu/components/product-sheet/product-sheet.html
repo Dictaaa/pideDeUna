@@ -43,7 +43,14 @@
 
     <div class="sheet-body">
       <h2 class="sheet-title">{{ p.name }}</h2>
-      <p class="sheet-price">{{ +p.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+      <p class="sheet-price">
+        @if (p.compareAtPrice && +p.compareAtPrice > +p.price) {
+          <span class="sheet-price-compare">{{ +p.compareAtPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+        }
+        <span [class.sheet-price-discounted]="p.compareAtPrice && +p.compareAtPrice > +p.price">
+          {{ +p.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+        </span>
+      </p>
       @if (p.description) {
         <p class="sheet-desc">{{ p.description }}</p>
       }
@@ -89,6 +96,17 @@
         </div>
       }
 
+      <label class="notes-field">
+        <span>Observaciones (opcional)</span>
+        <textarea
+          rows="2"
+          placeholder="Ej: sin cebolla, sin picante, término medio…"
+          [ngModel]="notes()"
+          (ngModelChange)="notes.set($event)"
+          name="notes"
+        ></textarea>
+      </label>
+
       <div class="qty-row">
         <span class="qty-label">Cantidad</span>
         <div class="stepper">
@@ -103,6 +121,76 @@
       <button type="button" class="add-cart-btn" (click)="confirmAdd($event)">
         <span>Agregar al pedido</span>
         <span>{{ grandTotal() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+      </button>
+    </div>
+  } @else if (combo(); as c) {
+    <div class="sheet-img-wrap">
+      @if (c.imageUrl) {
+        <div class="media-stage">
+          <img class="media-bg" [src]="c.imageUrl" alt="" aria-hidden="true" />
+          <img class="media-fg" [src]="c.imageUrl" [alt]="c.name" />
+        </div>
+      } @else {
+        <div class="sheet-img placeholder"></div>
+      }
+      <button type="button" class="sheet-close" (click)="close()">✕</button>
+    </div>
+
+    <div class="sheet-body">
+      <h2 class="sheet-title">🏷️ {{ c.name }}</h2>
+      <p class="sheet-price">{{ +(c.fixedAmount ?? 0) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+      @if (c.description) {
+        <p class="sheet-desc">{{ c.description }}</p>
+      }
+
+      <div class="combo-progress" [class.combo-complete]="comboTotalSelected() === c.buyQuantity">
+        Elige {{ c.buyQuantity }} — llevas {{ comboTotalSelected() }} / {{ c.buyQuantity }}
+      </div>
+
+      <div class="group">
+        @for (cp of c.products; track cp.id) {
+          <div class="option-row combo-option-row">
+            <div class="option-left">
+              @if (cp.imageUrl) {
+                <img class="combo-option-thumb" [src]="cp.imageUrl" [alt]="cp.name" />
+              } @else {
+                <div class="combo-option-thumb placeholder"></div>
+              }
+              <span>
+                {{ cp.name }}
+                <span class="combo-normal-price">({{ +cp.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }} normal)</span>
+              </span>
+            </div>
+            <div class="stepper">
+              <button type="button" class="step-btn" (click)="decrementComboQty(cp.id)">–</button>
+              <span class="qty-value">{{ comboQuantityFor(cp.id) }}</span>
+              <button type="button" class="step-btn" (click)="incrementComboQty(cp.id)">+</button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <label class="notes-field">
+        <span>Observaciones (opcional)</span>
+        <textarea
+          rows="2"
+          placeholder="Ej: sin cebolla, sin picante, término medio…"
+          [ngModel]="comboNotes()"
+          (ngModelChange)="comboNotes.set($event)"
+          name="comboNotes"
+        ></textarea>
+      </label>
+    </div>
+
+    <div class="sheet-footer">
+      <button
+        type="button"
+        class="add-cart-btn"
+        [disabled]="comboTotalSelected() !== c.buyQuantity"
+        (click)="confirmCombo($event)"
+      >
+        <span>Agregar combo</span>
+        <span>{{ +(c.fixedAmount ?? 0) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
       </button>
     </div>
   }

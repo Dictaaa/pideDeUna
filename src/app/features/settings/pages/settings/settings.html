@@ -7,114 +7,146 @@
   </div>
 
   @if (errorMessage(); as msg) {
-    <div class="form-error page-error">{{ msg }}</div>
+  <div class="form-error page-error">{{ msg }}</div>
   }
 
   @if (loading()) {
-    <div class="section">
-      <app-skeleton width="90px" height="13px"></app-skeleton>
-      <div class="skeleton-gap"></div>
-      <div class="color-row">
-        <app-skeleton width="64px" height="36px" radius="8px"></app-skeleton>
-        <app-skeleton width="64px" height="36px" radius="8px"></app-skeleton>
-      </div>
-      <app-skeleton width="130px" height="34px" radius="8px"></app-skeleton>
+  <div class="section">
+    <app-skeleton width="90px" height="13px"></app-skeleton>
+    <div class="skeleton-gap"></div>
+    <div class="color-row">
+      <app-skeleton width="64px" height="36px" radius="8px"></app-skeleton>
+      <app-skeleton width="64px" height="36px" radius="8px"></app-skeleton>
     </div>
-    <div class="section">
-      <app-skeleton width="150px" height="13px"></app-skeleton>
-      <div class="skeleton-gap"></div>
-      @for (i of [1, 2, 3, 4, 5]; track i) {
-        <div class="skeleton-toggle-row">
-          <app-skeleton width="18px" height="18px" radius="4px"></app-skeleton>
-          <app-skeleton width="60%" height="12px"></app-skeleton>
-        </div>
-      }
+    <app-skeleton width="130px" height="34px" radius="8px"></app-skeleton>
+  </div>
+  <div class="section">
+    <app-skeleton width="150px" height="13px"></app-skeleton>
+    <div class="skeleton-gap"></div>
+    @for (i of [1, 2, 3, 4, 5]; track i) {
+    <div class="skeleton-toggle-row">
+      <app-skeleton width="18px" height="18px" radius="4px"></app-skeleton>
+      <app-skeleton width="60%" height="12px"></app-skeleton>
     </div>
+    }
+  </div>
   } @else {
-    <section class="section">
-      <h2>Marca</h2>
-      <p class="section-sub">El logo, el color y la tipografía con la que se ve tu menú.</p>
+  <section class="section">
+    <h2>Marca</h2>
+    <p class="section-sub">El logo, el color y la tipografía con la que se ve tu menú.</p>
 
-      @if (logoError(); as lErr) {
-        <div class="form-error" style="margin-bottom: 14px;">{{ lErr }}</div>
+    @if (logoError(); as lErr) {
+    <div class="form-error" style="margin-bottom: 14px;">{{ lErr }}</div>
+    }
+
+    <div class="logo-row">
+      @if (restaurant()?.logoUrl) {
+      <img class="logo-current" [src]="restaurant()!.logoUrl" alt="" />
+      } @else {
+      <div class="logo-current logo-current-empty">{{ restaurant()?.name?.charAt(0) || 'P' }}</div>
       }
-
-      <div class="logo-row">
-        @if (restaurant()?.logoUrl) {
-          <img class="logo-current" [src]="restaurant()!.logoUrl" alt="" />
-        } @else {
-          <div class="logo-current logo-current-empty">{{ restaurant()?.name?.charAt(0) || 'P' }}</div>
-        }
-        <label class="btn-secondary logo-upload-btn">
-          {{ uploadingLogo() ? 'Subiendo…' : 'Cambiar logo' }}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            (change)="onLogoSelected($event)"
-            [disabled]="uploadingLogo()"
-            hidden
-          />
-        </label>
-      </div>
-
-      <div class="color-row">
-        <label class="color-field">
-          <span>Primario</span>
-          <input type="color" [ngModel]="primaryColor()" (ngModelChange)="primaryColor.set($event)" name="primaryColor" />
-        </label>
-        <label class="color-field">
-          <span>Secundario</span>
-          <input
-            type="color"
-            [ngModel]="secondaryColor()"
-            (ngModelChange)="secondaryColor.set($event)"
-            name="secondaryColor"
-          />
-        </label>
-      </div>
-
-      <label class="field font-field">
-        <span>Tipografía del menú (nombre y descripción de cada plato)</span>
-        <select [ngModel]="fontFamily()" (ngModelChange)="onFontChange($event)" name="fontFamily">
-          @for (opt of fontOptions; track opt.id) {
-            <option [value]="opt.id">{{ opt.label }}</option>
-          }
-        </select>
+      <label class="btn-secondary logo-upload-btn">
+        {{ uploadingLogo() ? 'Subiendo…' : 'Cambiar logo' }}
+        <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onLogoSelected($event)"
+          [disabled]="uploadingLogo()" hidden />
       </label>
+    </div>
 
-      <p class="font-preview">
-        <span [style.fontFamily]="currentFontStack()">
-          Hamburguesa Sua — carne 200g, queso madurado y salsa de la casa
-        </span>
-      </p>
+    <div class="color-row">
+      <label class="color-field">
+        <span>Primario</span>
+        <input type="color" [ngModel]="primaryColor()" (ngModelChange)="primaryColor.set($event)" name="primaryColor" />
+      </label>
+      <label class="color-field">
+        <span>Secundario</span>
+        <input type="color" [ngModel]="secondaryColor()" (ngModelChange)="secondaryColor.set($event)"
+          name="secondaryColor" />
+      </label>
+    </div>
 
-      <button type="button" class="btn-primary" [disabled]="savingBranding()" (click)="saveBranding()">
-        {{ savingBranding() ? 'Guardando…' : brandingSaved() ? '¡Guardado!' : 'Guardar marca' }}
-      </button>
-    </section>
+    <label class="field font-field">
+      <span>Tipografía del menú (nombre y descripción de cada plato)</span>
+      <select [ngModel]="fontFamily()" (ngModelChange)="onFontChange($event)" name="fontFamily">
+        @for (opt of fontOptions; track opt.id) {
+        <option [value]="opt.id">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+
+    <p class="font-preview">
+      <span [style.fontFamily]="currentFontStack()">
+        Hamburguesa Sua — carne 200g, queso madurado y salsa de la casa
+      </span>
+    </p>
+
+    <button type="button" class="btn-primary" [disabled]="savingBranding()" (click)="saveBranding()">
+      {{ savingBranding() ? 'Guardando…' : brandingSaved() ? '¡Guardado!' : 'Guardar marca' }}
+    </button>
+  </section>
+
+  <section class="section">
+    <h2>Facturación</h2>
+    <p class="section-sub">
+      Lo que se imprime en el recibo. Esto es un comprobante de pago, no una factura electrónica DIAN.
+    </p>
+
+    <label class="field">
+      <span>NIT (opcional — se imprime en el recibo si lo llenas)</span>
+      <input type="text" placeholder="900.123.456-7" [ngModel]="nit()" (ngModelChange)="nit.set($event)" name="nit" />
+    </label>
+    <button type="button" class="btn-secondary" [disabled]="savingNit()" (click)="saveNit()">
+      {{ savingNit() ? 'Guardando…' : nitSaved() ? '¡Guardado!' : 'Guardar NIT' }}
+    </button>
 
     @if (settings(); as s) {
-      <section class="section">
-        <h2>Configuración operativa</h2>
-        <p class="section-sub">Qué puede hacer un cliente desde el QR de la mesa.</p>
+    <div class="field-row invoice-config-row">
+      <label class="field">
+        <span>Nombre del impuesto</span>
+        <select [ngModel]="s.taxLabel ?? ''" (ngModelChange)="setSettingField('taxLabel', $event || null)"
+          name="taxLabel">
+          <option value="">Ninguno (no cobro impuesto)</option>
+          <option value="INC">INC — Impuesto al Consumo (8%, el típico de restaurantes)</option>
+          <option value="IVA">IVA</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Tasa del impuesto (%)</span>
+        <input type="number" min="0" max="100" step="0.5" [ngModel]="s.taxRate"
+          (ngModelChange)="setSettingField('taxRate', $event)" name="taxRate" />
+      </label>
+    </div>
 
-        <div class="toggle-list">
-          @for (t of toggles; track t.key) {
-            <label class="toggle-row">
-              <input
-                type="checkbox"
-                [checked]="toggleValue(t.key)"
-                (change)="setToggle(t.key, $any($event.target).checked)"
-              />
-              <span>{{ t.label }}</span>
-            </label>
-          }
-        </div>
+    <label class="field">
+      <span>Propina sugerida (%) — solo se ofrece si "Permitir propina" está activo abajo</span>
+      <input type="number" min="0" max="100" step="0.5" [ngModel]="s.tipRate"
+        (ngModelChange)="setSettingField('tipRate', $event)" name="tipRate" />
+    </label>
 
-        <button type="button" class="btn-primary" [disabled]="savingSettings()" (click)="saveSettings()">
-          {{ savingSettings() ? 'Guardando…' : settingsSaved() ? '¡Guardado!' : 'Guardar configuración' }}
-        </button>
-      </section>
+    <button type="button" class="btn-secondary" [disabled]="savingSettings()" (click)="saveSettings()">
+      {{ savingSettings() ? 'Guardando…' : settingsSaved() ? '¡Guardado!' : 'Guardar impuesto y propina' }}
+    </button>
     }
+  </section>
+
+  @if (settings(); as s) {
+  <section class="section">
+    <h2>Configuración operativa</h2>
+    <p class="section-sub">Qué puede hacer un cliente desde el QR de la mesa.</p>
+
+    <div class="toggle-list">
+      @for (t of toggles; track t.key) {
+      <label class="toggle-row">
+        <input type="checkbox" [checked]="toggleValue(t.key)"
+          (change)="setToggle(t.key, $any($event.target).checked)" />
+        <span>{{ t.label }}</span>
+      </label>
+      }
+    </div>
+
+    <button type="button" class="btn-primary" [disabled]="savingSettings()" (click)="saveSettings()">
+      {{ savingSettings() ? 'Guardando…' : settingsSaved() ? '¡Guardado!' : 'Guardar configuración' }}
+    </button>
+  </section>
+  }
   }
 </div>

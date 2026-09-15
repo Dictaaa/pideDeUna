@@ -27,8 +27,8 @@
   }
 
   &.status-READY {
-    border-color: var(--success);
-    box-shadow: 0 0 0 1px var(--success);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
   }
 }
 
@@ -98,6 +98,23 @@
 }
 .draft-name {
   flex: 1;
+}
+.draft-row-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.draft-extra {
+  font-size: 11.5px;
+  color: var(--primary-ink);
+  font-weight: 600;
+}
+.draft-notes {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  font-style: italic;
 }
 .draft-qty {
   display: flex;
@@ -211,4 +228,256 @@
   text-align: center;
   padding: 12px 0;
   margin: 0;
+}
+
+.back-link {
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+
+.group {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+.group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+
+  h3 {
+    font-size: 13px;
+    margin: 0;
+    font-weight: 700;
+  }
+}
+.group-hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.option-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--surface);
+  }
+  &.selected {
+    background: color-mix(in srgb, var(--primary) 10%, white);
+    font-weight: 600;
+  }
+}
+.option-price {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-ink);
+}
+
+// ── Recibo imprimible ────────────────────────────────────────
+
+.invoice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(28, 28, 28, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px;
+}
+
+.invoice-sheet {
+  width: 100%;
+  max-width: 340px;
+  max-height: 75vh;
+  overflow-y: auto;
+  background: #fff;
+  color: #1c1c1c;
+  padding: 22px 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 12.5px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invoice-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #999;
+
+  strong {
+    font-size: 14px;
+  }
+}
+
+.invoice-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.invoice-items {
+  padding: 8px 0;
+  border-top: 1px dashed #999;
+  border-bottom: 1px dashed #999;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.invoice-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 600;
+}
+.invoice-item-extra {
+  font-size: 11px;
+  color: #555;
+  padding-left: 8px;
+}
+
+.invoice-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.invoice-total-row {
+  display: flex;
+  justify-content: space-between;
+}
+.invoice-grand-total {
+  font-weight: 800;
+  font-size: 14px;
+  border-top: 1px dashed #999;
+  padding-top: 6px;
+  margin-top: 3px;
+}
+
+.invoice-payment {
+  text-align: center;
+  font-size: 11.5px;
+  color: #555;
+}
+.invoice-footer-note {
+  text-align: center;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+
+.invoice-actions {
+  display: flex;
+  gap: 10px;
+}
+
+// Al imprimir: solo el recibo, sin overlay oscuro, sin botones, sin
+// el resto de la app (sidebar/navbar/panel) — el navegador imprime
+// justo lo que ve el cliente, nada más.
+//
+// @page le pide al navegador/impresora un papel angosto tipo tiquete
+// (80mm, el ancho estándar de una impresora térmica de punto de venta)
+// en vez de la hoja carta completa por defecto. La mayoría de
+// impresoras térmicas y el "Guardar como PDF" del navegador respetan
+// esto automáticamente. Si imprimes en una impresora normal cargada
+// con hoja carta, el navegador puede seguir mostrando ese tamaño de
+// papel en el diálogo — eso ya no lo decide el sitio web, lo decide
+// el navegador — pero el contenido igual va a verse angosto y
+// compacto como un tiquete, no estirado en toda la hoja.
+@page {
+  size: 80mm auto;
+  margin: 4mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 80mm;
+    margin: 0;
+    padding: 0;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .invoice-sheet,
+  .invoice-sheet * {
+    visibility: visible;
+  }
+  .invoice-overlay {
+    background: none; // ya no debe oscurecer la hoja al imprimir
+    position: static;
+  }
+  .invoice-sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80mm;
+    max-width: 80mm;
+    max-height: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 4mm;
+    font-size: 11px;
+  }
+  .invoice-actions {
+    display: none !important;
+  }
+}
+
+.serve-hint {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.picker-tab-combo {
+  background: color-mix(in srgb, var(--primary) 14%, white);
+}
+
+.combo-hint {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+.combo-normal-price {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+
+.combo-progress {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+.combo-progress.combo-complete {
+  background: color-mix(in srgb, #2e8b57 16%, white);
+  color: #1f6b41;
+}
+
+.combo-option-row {
+  cursor: default;
+
+  &:hover {
+    background: none;
+  }
 }

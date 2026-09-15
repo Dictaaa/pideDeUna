@@ -29,6 +29,15 @@ export const routes: Routes = [
     path: 'register',
     loadComponent: () => import('./features/auth/pages/register/register').then((m) => m.Register),
   },
+  {
+    path: 'olvide-mi-clave',
+    loadComponent: () =>
+      import('./features/auth/pages/forgot-password/forgot-password').then((m) => m.ForgotPassword),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () => import('./features/auth/pages/reset-password/reset-password').then((m) => m.ResetPassword),
+  },
 
   // ── Panel de administrador (protegido) ──────────────────
   {
@@ -48,8 +57,14 @@ export const routes: Routes = [
       },
       {
         path: 'pedidos',
-        canActivate: [roleGuard(...ADMIN_ROLES, 'WAITER')],
+        canActivate: [roleGuard(...ADMIN_ROLES, 'WAITER', 'CASHIER')],
         loadComponent: () => import('./features/orders/pages/orders/orders').then((m) => m.Orders),
+      },
+      {
+        path: 'historial',
+        canActivate: [roleGuard(...ADMIN_ROLES, 'WAITER', 'KITCHEN', 'CASHIER')],
+        loadComponent: () =>
+          import('./features/orders/pages/order-history/order-history').then((m) => m.OrderHistory),
       },
       {
         path: 'cocina',
@@ -68,6 +83,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/products/pages/products/products').then((m) => m.Products),
       },
       {
+        path: 'adicionales',
+        canActivate: [roleGuard(...ADMIN_ROLES)],
+        loadComponent: () =>
+          import('./features/modifier-groups/pages/modifier-groups/modifier-groups').then((m) => m.ModifierGroups),
+      },
+      {
+        path: 'promociones',
+        canActivate: [roleGuard(...ADMIN_ROLES)],
+        loadComponent: () => import('./features/promotions/pages/promotions/promotions').then((m) => m.Promotions),
+      },
+      {
         path: 'areas',
         canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/areas/pages/areas/areas').then((m) => m.Areas),
@@ -76,6 +102,11 @@ export const routes: Routes = [
         path: 'mesas',
         canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/tables/pages/tables/tables').then((m) => m.Tables),
+      },
+      {
+        path: 'auditoria',
+        canActivate: [roleGuard(...ADMIN_ROLES)],
+        loadComponent: () => import('./features/audit-log/pages/audit-log/audit-log').then((m) => m.AuditLogPage),
       },
       {
         path: 'usuarios',
@@ -128,6 +159,11 @@ export const routes: Routes = [
     path: ':slug',
     loadComponent: () => import('./features/menu/pages/menu-page/menu-page').then((m) => m.MenuPage),
   },
+  {
+  path: ':slug/pedido/:orderId',
+  loadComponent: () =>
+    import('./features/menu/pages/order-tracking/order-tracking').then((m) => m.OrderTracking),
+},
 
   // ── 404 — SIEMPRE al final, es la que atrapa todo lo demás ──
   {

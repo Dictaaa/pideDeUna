@@ -33,4 +33,9 @@ export class ProductAdmin {
   removeMedia(slug: string, productId: string, mediaId: string) {
     return this.api.delete<void>(API.PRODUCTS.MEDIA_DELETE(slug, productId, mediaId));
   }
+
+  /** Reemplaza TODOS los grupos de adicionales del producto por esta lista (no es un "agregar uno"). */
+  setModifierGroups(slug: string, productId: string, modifierGroupIds: string[]) {
+    return this.api.put<unknown>(API.PRODUCTS.SET_MODIFIER_GROUPS(slug, productId), { modifierGroupIds });
+  }
 }

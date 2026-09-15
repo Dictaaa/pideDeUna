@@ -1,0 +1,44 @@
+@use '../../../../shared/styles/admin-page' as *;
+
+.filter-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 18px;
+
+  .field {
+    width: auto;
+    min-width: 180px;
+  }
+  .field select {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+  }
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.panel-sub {
+  margin: -6px 0 4px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.values-block {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 11.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+}

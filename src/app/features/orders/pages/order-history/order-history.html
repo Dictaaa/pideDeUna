@@ -1,0 +1,174 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Historial</h1>
+      <p>Pedidos ya cobrados o cancelados — de solo lectura.</p>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <label class="field">
+      <span>Desde</span>
+      <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" name="fromDate" />
+    </label>
+    <label class="field">
+      <span>Hasta</span>
+      <input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)" name="toDate" />
+    </label>
+    <button type="button" class="btn-primary" (click)="applyFilter()">Filtrar</button>
+    <button type="button" class="btn-secondary" (click)="clearFilter()">Limpiar</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="5" [cols]="5"></app-table-skeleton>
+  } @else if (orders().length === 0) {
+    <div class="empty-state">No hay pedidos en este rango.</div>
+  } @else {
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Mesa</th>
+            <th>Fecha</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders(); track order.id) {
+            <tr class="clickable-row" (click)="openOrder(order)">
+              <td class="cell-strong">#{{ order.orderNumber }}</td>
+              <td class="cell-muted">Mesa {{ order.table?.tableNumber }}</td>
+              <td class="cell-muted">{{ formatInvoiceDate(order.createdAt) }}</td>
+              <td>{{ '$' + (+order.total | number: '1.0-0') }}</td>
+              <td>
+                <span class="badge" [class.badge-off]="order.status === 'CANCELLED'">
+                  {{ statusLabel(order.status) }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (selectedOrder(); as order) {
+  <div class="overlay" (click)="closePanel()"></div>
+  <div class="panel">
+    <h2>Pedido #{{ order.orderNumber }}</h2>
+    <p class="panel-sub">
+      Mesa {{ order.table?.tableNumber }}
+      @if (order.customerName) {
+        · {{ order.customerName }}
+      }
+      · <span class="badge" [class.badge-off]="order.status === 'CANCELLED'">{{ statusLabel(order.status) }}</span>
+    </p>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <div class="draft-list">
+      @for (item of order.items; track item.id) {
+        <div class="draft-row">
+          <div class="draft-row-main">
+            <span class="draft-name">{{ item.quantity }} × {{ item.productName }}</span>
+            @if (item.modifiers.length) {
+              <span class="draft-extra">+ {{ modifierNamesLabel(item) }}</span>
+            }
+            @if (item.notes) {
+              <span class="draft-notes">"{{ item.notes }}"</span>
+            }
+          </div>
+          <span class="draft-price">{{ '$' + (+item.subtotal | number: '1.0-0') }}</span>
+        </div>
+      }
+    </div>
+    <div class="draft-total">Total: {{ '$' + (+order.total | number: '1.0-0') }}</div>
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closePanel()">Cerrar</button>
+      @if (order.status === 'COMPLETED') {
+        <button type="button" class="btn-primary" [disabled]="loadingInvoice()" (click)="viewInvoice(order)">
+          {{ loadingInvoice() ? 'Cargando…' : 'Ver factura' }}
+        </button>
+      }
+    </div>
+  </div>
+}
+
+@if (printingInvoice(); as inv) {
+  <div class="invoice-overlay">
+    <div class="invoice-sheet">
+      <div class="invoice-head">
+        <strong>{{ inv.restaurant.name }}</strong>
+        @if (inv.restaurant.nit) {
+          <span>NIT {{ inv.restaurant.nit }}</span>
+        }
+        @if (inv.restaurant.address) {
+          <span>{{ inv.restaurant.address }}</span>
+        }
+        @if (inv.restaurant.phone) {
+          <span>Tel. {{ inv.restaurant.phone }}</span>
+        }
+      </div>
+
+      <div class="invoice-meta">
+        <span>Recibo No. {{ inv.invoiceNumber }}</span>
+        <span>{{ formatInvoiceDate(inv.paidAt) }}</span>
+      </div>
+      <div class="invoice-meta">
+        <span>Pedido #{{ inv.orderNumber }}</span>
+        @if (inv.table) {
+          <span>Mesa {{ inv.table.tableNumber }}</span>
+        }
+      </div>
+      @if (inv.customerName) {
+        <div class="invoice-meta"><span>Cliente: {{ inv.customerName }}</span></div>
+      }
+
+      <div class="invoice-items">
+        @for (item of inv.items; track item.productName + item.subtotal) {
+          <div class="invoice-item-row">
+            <span class="invoice-item-name">{{ item.quantity }} × {{ item.productName }}</span>
+            <span class="invoice-item-price">{{ '$' + (+item.subtotal | number: '1.0-0') }}</span>
+          </div>
+          @for (m of item.modifiers; track m.name) {
+            <div class="invoice-item-extra">+ {{ m.name }}</div>
+          }
+          @if (item.notes) {
+            <div class="invoice-item-extra">"{{ item.notes }}"</div>
+          }
+        }
+      </div>
+
+      <div class="invoice-totals">
+        <div class="invoice-total-row"><span>Subtotal</span><span>{{ '$' + (+inv.subtotal | number: '1.0-0') }}</span></div>
+        @if (+inv.taxAmount > 0) {
+          <div class="invoice-total-row"><span>{{ inv.taxLabel }} ({{ inv.taxRate }}%)</span><span>{{ '$' + (+inv.taxAmount | number: '1.0-0') }}</span></div>
+        }
+        @if (+inv.tipAmount > 0) {
+          <div class="invoice-total-row"><span>Propina</span><span>{{ '$' + (+inv.tipAmount | number: '1.0-0') }}</span></div>
+        }
+        <div class="invoice-total-row invoice-grand-total"><span>Total</span><span>{{ '$' + (+inv.total | number: '1.0-0') }}</span></div>
+      </div>
+
+      <div class="invoice-payment">
+        Pagado con {{ inv.paymentMethod }}
+        @if (inv.transactionReference) {
+          · Ref: {{ inv.transactionReference }}
+        }
+      </div>
+
+      <p class="invoice-footer-note">¡Gracias por su visita!</p>
+    </div>
+
+    <div class="invoice-actions">
+      <button type="button" class="btn-secondary" (click)="closeInvoice()">Cerrar</button>
+      <button type="button" class="btn-primary" (click)="printInvoice()">Imprimir</button>
+    </div>
+  </div>
+}

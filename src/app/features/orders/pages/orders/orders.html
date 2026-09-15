@@ -4,7 +4,9 @@
       <h1>Pedidos</h1>
       <p>Los pedidos activos de tus mesas, en tiempo real.</p>
     </div>
-    <button type="button" class="btn-primary" (click)="openCreate()">+ Nuevo pedido</button>
+    @if (!isCashierOnly()) {
+      <button type="button" class="btn-primary" (click)="openCreate()">+ Nuevo pedido</button>
+    }
   </div>
 
   @if (loading()) {
@@ -43,151 +45,397 @@
       <div class="form-error">{{ msg }}</div>
     }
 
-    @if (panelMode() === 'create') {
-      <h2>Nuevo pedido</h2>
+    @if (customizingProduct(); as cp) {
+      <!-- ── Personalizar: observaciones + adicionales, antes de agregar ── -->
+      <button type="button" class="link-btn back-link" (click)="cancelCustomize()">← Volver al menú</button>
+      <h2>{{ cp.name }}</h2>
+      <p class="panel-sub">{{ '$' + (+cp.price | number: '1.0-0') }}</p>
 
-      <label class="field">
-        <span>Mesa</span>
-        <select [ngModel]="selectedTableId()" (ngModelChange)="selectedTableId.set($event)" name="tableId">
-          @for (t of tables(); track t.id) {
-            <option [value]="t.id">{{ t.name || ('Mesa ' + t.tableNumber) }}</option>
-          }
-        </select>
-      </label>
-
-      <label class="field">
-        <span>Nombre del cliente (opcional)</span>
-        <input type="text" [ngModel]="customerName()" (ngModelChange)="customerName.set($event)" name="customerName" />
-      </label>
-
-      @if (draftItems().length > 0) {
-        <div class="draft-list">
-          @for (item of draftItems(); track item.productId) {
-            <div class="draft-row">
-              <span class="draft-name">{{ item.name }}</span>
-              <div class="draft-qty">
-                <button type="button" class="step-btn" (click)="decrementDraft(item)">–</button>
-                <span>{{ item.quantity }}</span>
-              </div>
-              <span class="draft-price">{{ '$' + (item.unitPrice * item.quantity | number: '1.0-0') }}</span>
+      @for (group of allModifierGroups(); track group.id) {
+        <div class="group">
+          <div class="group-head">
+            <h3>{{ group.name }}</h3>
+            <span class="group-hint">{{ group.required ? 'Obligatorio' : 'Hasta ' + group.maxSelections }}</span>
+          </div>
+          @for (opt of group.options ?? []; track opt.id) {
+            <div class="option-row" [class.selected]="isCustomizeSelected(opt.id)" (click)="toggleCustomizeOption(group, opt.id)">
+              <span>{{ opt.name }}</span>
+              <span class="option-price">
+                @if (+opt.price > 0) {
+                  + {{ '$' + (+opt.price | number: '1.0-0') }}
+                }
+              </span>
             </div>
           }
         </div>
-        <div class="draft-total">Total: {{ '$' + (draftTotal() | number: '1.0-0') }}</div>
       }
 
-      <div class="picker">
-        <div class="picker-tabs">
-          @for (cat of categories(); track cat.id) {
-            <button
-              type="button"
-              class="picker-tab"
-              [class.active]="cat.id === pickerCategoryId()"
-              (click)="pickerCategoryId.set(cat.id)"
-            >
-              {{ cat.name }}
-            </button>
-          }
-        </div>
-        <div class="picker-list">
-          @for (product of productsInPickerCategory(); track product.id) {
-            <button type="button" class="picker-item" (click)="addDraftProduct(product)">
-              <span>{{ product.name }}</span>
-              <span class="picker-price">{{ '$' + (+product.price | number: '1.0-0') }}</span>
-            </button>
-          }
-        </div>
-      </div>
+      <label class="field">
+        <span>Observaciones (opcional)</span>
+        <textarea
+          rows="2"
+          placeholder="Ej: sin cebolla, sin picante…"
+          [ngModel]="customizeNotes()"
+          (ngModelChange)="customizeNotes.set($event)"
+          name="customizeNotes"
+        ></textarea>
+      </label>
 
       <div class="panel-actions">
-        <button type="button" class="btn-secondary" (click)="closePanel()">Cancelar</button>
-        <button type="button" class="btn-primary" [disabled]="saving()" (click)="submitCreate($event)">
-          {{ saving() ? 'Creando…' : 'Crear pedido' }}
+        <button type="button" class="btn-secondary" (click)="cancelCustomize()">Cancelar</button>
+        <button type="button" class="btn-primary" [disabled]="addingCustomized()" (click)="confirmCustomize()">
+          {{ addingCustomized() ? 'Agregando…' : 'Agregar — ' + ('$' + (customizeUnitTotal() | number: '1.0-0')) }}
         </button>
       </div>
-    } @else if (activeOrder()) {
-      @if (activeOrder(); as order) {
-      <h2>Pedido #{{ order.orderNumber }}</h2>
-      <p class="panel-sub">
-        Mesa {{ order.table?.tableNumber }}
-        @if (order.customerName) {
-          · {{ order.customerName }}
-        }
-        · <span class="badge">{{ statusLabel(order.status) }}</span>
-      </p>
+    } @else {
+      @if (buildingCombo(); as combo) {
+        <!-- ── Armar combo: elegir entre los productos que aplican ── -->
+        <button type="button" class="link-btn back-link" (click)="cancelBuildCombo()">← Volver al menú</button>
+        <h2>{{ combo.name }}</h2>
+        <p class="panel-sub">
+          Elige {{ combo.buyQuantity }} unidades entre estos productos —
+          {{ '$' + (+(combo.fixedAmount ?? 0) | number: '1.0-0') }} en total
+        </p>
 
-      <div class="draft-list">
-        @for (item of order.items; track item.id) {
-          <div class="draft-row">
-            <span class="draft-name">{{ item.quantity }} × {{ item.productName }}</span>
-            <span class="draft-price">{{ '$' + (+item.subtotal | number: '1.0-0') }}</span>
-            <button type="button" class="link-btn danger" (click)="removeOrderItem(item)">Quitar</button>
+        <div class="combo-progress" [class.combo-complete]="comboTotalSelected() === combo.buyQuantity">
+          Elegidos: {{ comboTotalSelected() }} / {{ combo.buyQuantity }}
+        </div>
+
+        @for (p of combo.products; track p.id) {
+          <div class="option-row combo-option-row">
+            <span>{{ p.name }} <span class="combo-normal-price">({{ '$' + (+p.price | number: '1.0-0') }} normal)</span></span>
+            <div class="draft-qty">
+              <button type="button" class="step-btn" (click)="decrementComboQty(p.id)">–</button>
+              <span>{{ comboQuantityFor(p.id) }}</span>
+              <button type="button" class="step-btn" (click)="incrementComboQty(p.id)">+</button>
+            </div>
           </div>
         }
-      </div>
-      <div class="draft-total">Total: {{ '$' + (+order.total | number: '1.0-0') }}</div>
 
-      <div class="picker">
-        <div class="picker-tabs">
-          @for (cat of categories(); track cat.id) {
-            <button
-              type="button"
-              class="picker-tab"
-              [class.active]="cat.id === pickerCategoryId()"
-              (click)="pickerCategoryId.set(cat.id)"
-            >
-              {{ cat.name }}
-            </button>
-          }
-        </div>
-        <div class="picker-list">
-          @for (product of productsInPickerCategory(); track product.id) {
-            <button type="button" class="picker-item" (click)="addProductToActiveOrder(product)">
-              <span>{{ product.name }}</span>
-              <span class="picker-price">{{ '$' + (+product.price | number: '1.0-0') }}</span>
-            </button>
-          }
-        </div>
-      </div>
-
-            @if (order.status === 'READY') {
-        <div class="charge-box">
-          <h3>Cobrar y finalizar</h3>
-          <label class="field">
-            <span>Método de pago</span>
-            <select [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)" name="paymentMethod">
-              @for (m of paymentMethods; track m.value) {
-                <option [value]="m.value">{{ m.label }}</option>
-              }
-            </select>
-          </label>
-          <label class="field">
-            <span>Número de factura / referencia (opcional)</span>
-            <input
-              type="text"
-              placeholder="Ej: el que dio el datáfono, Wompi o ePayco"
-              [ngModel]="paymentReference()"
-              (ngModelChange)="paymentReference.set($event)"
-              name="paymentReference"
-            />
-          </label>
+        <div class="panel-actions">
+          <button type="button" class="btn-secondary" (click)="cancelBuildCombo()">Cancelar</button>
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="comboTotalSelected() !== combo.buyQuantity || addingCustomized()"
+            (click)="confirmCombo()"
+          >
+            {{ addingCustomized() ? 'Agregando…' : 'Agregar combo' }}
+          </button>
         </div>
       } @else {
-        <p class="waiting-note">Esperando a que cocina lo marque como listo…</p>
-      }
+      @if (panelMode() === 'create') {
+        <h2>Nuevo pedido</h2>
 
-      <div class="panel-actions panel-actions-spread">
-        <button type="button" class="link-btn danger" (click)="cancelOrder(order)">Cancelar pedido</button>
-        <button
-          type="button"
-          class="btn-primary"
-          [disabled]="order.status !== 'READY' || charging()"
-          (click)="confirmCharge(order)"
-        >
-          {{ charging() ? 'Registrando…' : 'Confirmar cobro' }}
-        </button>
-      </div>
+        <label class="field">
+          <span>Mesa</span>
+          <select [ngModel]="selectedTableId()" (ngModelChange)="selectedTableId.set($event)" name="tableId">
+            @for (t of tables(); track t.id) {
+              <option [value]="t.id">{{ t.name || ('Mesa ' + t.tableNumber) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Nombre del cliente (opcional)</span>
+          <input type="text" [ngModel]="customerName()" (ngModelChange)="customerName.set($event)" name="customerName" />
+        </label>
+
+        @if (draftItems().length > 0 || draftCombos().length > 0) {
+          <div class="draft-list">
+            @for (item of draftItems(); track item.key; let i = $index) {
+              <div class="draft-row">
+                <div class="draft-row-main">
+                  <span class="draft-name">{{ item.name }}</span>
+                  @if (item.modifierNames.length) {
+                    <span class="draft-extra">+ {{ item.modifierNames.join(', ') }}</span>
+                  }
+                  @if (item.notes) {
+                    <span class="draft-notes">"{{ item.notes }}"</span>
+                  }
+                </div>
+                <div class="draft-qty">
+                  <button type="button" class="step-btn" (click)="decrementDraftAt(i)">–</button>
+                  <span>{{ item.quantity }}</span>
+                  <button type="button" class="step-btn" (click)="incrementDraftAt(i)">+</button>
+                </div>
+                <span class="draft-price">{{ '$' + (item.unitPrice * item.quantity | number: '1.0-0') }}</span>
+              </div>
+            }
+            @for (combo of draftCombos(); track combo.key; let i = $index) {
+              <div class="draft-row">
+                <div class="draft-row-main">
+                  <span class="draft-name">🏷️ {{ combo.promotionName }}</span>
+                  <span class="draft-extra">{{ comboSelectionsLabel(combo) }}</span>
+                </div>
+                <span class="draft-price">{{ '$' + (combo.totalPrice | number: '1.0-0') }}</span>
+                <button type="button" class="link-btn danger" (click)="removeDraftCombo(i)">Quitar</button>
+              </div>
+            }
+          </div>
+          <div class="draft-total">Total: {{ '$' + (draftTotal() | number: '1.0-0') }}</div>
+        }
+
+        <div class="picker">
+          <div class="picker-tabs">
+            @for (cat of categories(); track cat.id) {
+              <button
+                type="button"
+                class="picker-tab"
+                [class.active]="pickerMode() === 'products' && cat.id === pickerCategoryId()"
+                (click)="selectCategoryTab(cat.id)"
+              >
+                {{ cat.name }}
+              </button>
+            }
+            @if (promotions().length > 0) {
+              <button
+                type="button"
+                class="picker-tab picker-tab-combo"
+                [class.active]="pickerMode() === 'promotions'"
+                (click)="pickerMode.set('promotions')"
+              >
+                🏷️ Combos
+              </button>
+            }
+          </div>
+          <div class="picker-list">
+            @if (pickerMode() === 'products') {
+              @for (product of productsInPickerCategory(); track product.id) {
+                <button type="button" class="picker-item" (click)="openCustomize(product)">
+                  <span>{{ product.name }}</span>
+                  <span class="picker-price">{{ '$' + (+product.price | number: '1.0-0') }}</span>
+                </button>
+              }
+            } @else {
+              @for (promo of promotions(); track promo.id) {
+                <button type="button" class="picker-item" (click)="openBuildCombo(promo)">
+                  <span>{{ promo.name }} <span class="combo-hint">(lleva {{ promo.buyQuantity }})</span></span>
+                  <span class="picker-price">{{ '$' + (+(promo.fixedAmount ?? 0) | number: '1.0-0') }}</span>
+                </button>
+              }
+            }
+          </div>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" class="btn-secondary" (click)="closePanel()">Cancelar</button>
+          <button type="button" class="btn-primary" [disabled]="saving()" (click)="submitCreate()">
+            {{ saving() ? 'Creando…' : 'Crear pedido' }}
+          </button>
+        </div>
+      } @else {
+        @if (activeOrder(); as order) {
+          <h2>Pedido #{{ order.orderNumber }}</h2>
+          <p class="panel-sub">
+            Mesa {{ order.table?.tableNumber }}
+            @if (order.customerName) {
+              · {{ order.customerName }}
+            }
+            · <span class="badge">{{ statusLabel(order.status) }}</span>
+          </p>
+
+          <div class="draft-list">
+            @for (item of order.items; track item.id) {
+              <div class="draft-row">
+                <div class="draft-row-main">
+                  <span class="draft-name">{{ item.quantity }} × {{ item.productName }}</span>
+                  @if (item.modifiers.length) {
+                    <span class="draft-extra">+ {{ modifierNamesLabel(item) }}</span>
+                  }
+                  @if (item.notes) {
+                    <span class="draft-notes">"{{ item.notes }}"</span>
+                  }
+                </div>
+                <span class="draft-price">{{ '$' + (+item.subtotal | number: '1.0-0') }}</span>
+                @if (!isCashierOnly()) {
+                  <button type="button" class="link-btn danger" (click)="removeOrderItem(item)">Quitar</button>
+                }
+              </div>
+            }
+          </div>
+          <div class="draft-total">Total: {{ '$' + (+order.total | number: '1.0-0') }}</div>
+
+          @if (!isCashierOnly()) {
+            <div class="picker">
+              <div class="picker-tabs">
+                @for (cat of categories(); track cat.id) {
+                  <button
+                    type="button"
+                    class="picker-tab"
+                    [class.active]="pickerMode() === 'products' && cat.id === pickerCategoryId()"
+                    (click)="selectCategoryTab(cat.id)"
+                  >
+                    {{ cat.name }}
+                  </button>
+                }
+                @if (promotions().length > 0) {
+                  <button
+                    type="button"
+                    class="picker-tab picker-tab-combo"
+                    [class.active]="pickerMode() === 'promotions'"
+                    (click)="pickerMode.set('promotions')"
+                  >
+                    🏷️ Combos
+                  </button>
+                }
+              </div>
+              <div class="picker-list">
+                @if (pickerMode() === 'products') {
+                  @for (product of productsInPickerCategory(); track product.id) {
+                    <button type="button" class="picker-item" (click)="openCustomize(product)">
+                      <span>{{ product.name }}</span>
+                      <span class="picker-price">{{ '$' + (+product.price | number: '1.0-0') }}</span>
+                    </button>
+                  }
+                } @else {
+                  @for (promo of promotions(); track promo.id) {
+                    <button type="button" class="picker-item" (click)="openBuildCombo(promo)">
+                      <span>{{ promo.name }} <span class="combo-hint">(lleva {{ promo.buyQuantity }})</span></span>
+                      <span class="picker-price">{{ '$' + (+(promo.fixedAmount ?? 0) | number: '1.0-0') }}</span>
+                    </button>
+                  }
+                }
+              </div>
+            </div>
+          }
+
+          @if (order.status === 'READY' && canServe()) {
+            <div class="charge-box">
+              <h3>Cocina ya lo tiene listo</h3>
+              <p class="serve-hint">Márcalo como entregado cuando lo lleves a la mesa.</p>
+            </div>
+          } @else if (order.status === 'SERVED' && canCharge()) {
+            <div class="charge-box">
+              <h3>Cobrar y finalizar</h3>
+              <label class="field">
+                <span>Método de pago</span>
+                <select [ngModel]="paymentMethod()" (ngModelChange)="paymentMethod.set($event)" name="paymentMethod">
+                  @for (m of paymentMethods; track m.value) {
+                    <option [value]="m.value">{{ m.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field">
+                <span>Referencia de pago externo (opcional)</span>
+                <input
+                  type="text"
+                  placeholder="Ej: comprobante del datáfono, Wompi o ePayco"
+                  [ngModel]="paymentReference()"
+                  (ngModelChange)="paymentReference.set($event)"
+                  name="paymentReference"
+                />
+              </label>
+              @if (tipsAllowed()) {
+                <label class="field field-checkbox">
+                  <input type="checkbox" [ngModel]="includeTip()" (ngModelChange)="includeTip.set($event)" name="includeTip" />
+                  <span>Incluir propina sugerida ({{ tipRate() }}%)</span>
+                </label>
+              }
+            </div>
+          } @else if (order.status === 'READY') {
+            <p class="waiting-note">Listo en cocina — esperando que la mesera lo entregue…</p>
+          } @else if (order.status === 'SERVED') {
+            <p class="waiting-note">Entregado en la mesa — esperando que caja lo cobre…</p>
+          } @else {
+            <p class="waiting-note">Esperando a que cocina lo marque como listo…</p>
+          }
+
+          <div class="panel-actions panel-actions-spread">
+            @if (!isCashierOnly() && order.status !== 'SERVED' && order.status !== 'COMPLETED') {
+              <button type="button" class="link-btn danger" (click)="cancelOrder(order)">Cancelar pedido</button>
+            }
+            @if (order.status === 'READY' && canServe()) {
+              <button type="button" class="btn-primary" [disabled]="serving()" (click)="confirmServe(order)">
+                {{ serving() ? 'Marcando…' : 'Marcar como entregado' }}
+              </button>
+            } @else if (order.status === 'SERVED' && canCharge()) {
+              <button
+                type="button"
+                class="btn-primary"
+                [disabled]="charging() || loadingInvoice()"
+                (click)="confirmCharge(order)"
+              >
+                {{ charging() || loadingInvoice() ? 'Registrando…' : 'Confirmar cobro' }}
+              </button>
+            }
+          </div>
+        }
+      }
       }
     }
+  </div>
+}
+
+@if (printingInvoice(); as inv) {
+  <div class="invoice-overlay">
+    <div class="invoice-sheet">
+      <div class="invoice-head">
+        <strong>{{ inv.restaurant.name }}</strong>
+        @if (inv.restaurant.nit) {
+          <span>NIT {{ inv.restaurant.nit }}</span>
+        }
+        @if (inv.restaurant.address) {
+          <span>{{ inv.restaurant.address }}</span>
+        }
+        @if (inv.restaurant.phone) {
+          <span>Tel. {{ inv.restaurant.phone }}</span>
+        }
+      </div>
+
+      <div class="invoice-meta">
+        <span>Recibo No. {{ inv.invoiceNumber }}</span>
+        <span>{{ formatInvoiceDate(inv.paidAt) }}</span>
+      </div>
+      <div class="invoice-meta">
+        <span>Pedido #{{ inv.orderNumber }}</span>
+        @if (inv.table) {
+          <span>Mesa {{ inv.table.tableNumber }}</span>
+        }
+      </div>
+      @if (inv.customerName) {
+        <div class="invoice-meta"><span>Cliente: {{ inv.customerName }}</span></div>
+      }
+
+      <div class="invoice-items">
+        @for (item of inv.items; track item.productName + item.subtotal) {
+          <div class="invoice-item-row">
+            <span class="invoice-item-name">{{ item.quantity }} × {{ item.productName }}</span>
+            <span class="invoice-item-price">{{ '$' + (+item.subtotal | number: '1.0-0') }}</span>
+          </div>
+          @for (m of item.modifiers; track m.name) {
+            <div class="invoice-item-extra">+ {{ m.name }}</div>
+          }
+          @if (item.notes) {
+            <div class="invoice-item-extra">"{{ item.notes }}"</div>
+          }
+        }
+      </div>
+
+      <div class="invoice-totals">
+        <div class="invoice-total-row"><span>Subtotal</span><span>{{ '$' + (+inv.subtotal | number: '1.0-0') }}</span></div>
+        @if (+inv.taxAmount > 0) {
+          <div class="invoice-total-row"><span>{{ inv.taxLabel }} ({{ inv.taxRate }}%)</span><span>{{ '$' + (+inv.taxAmount | number: '1.0-0') }}</span></div>
+        }
+        @if (+inv.tipAmount > 0) {
+          <div class="invoice-total-row"><span>Propina</span><span>{{ '$' + (+inv.tipAmount | number: '1.0-0') }}</span></div>
+        }
+        <div class="invoice-total-row invoice-grand-total"><span>Total</span><span>{{ '$' + (+inv.total | number: '1.0-0') }}</span></div>
+      </div>
+
+      <div class="invoice-payment">
+        Pagado con {{ inv.paymentMethod }}
+        @if (inv.transactionReference) {
+          · Ref: {{ inv.transactionReference }}
+        }
+      </div>
+
+      <p class="invoice-footer-note">¡Gracias por su visita!</p>
+    </div>
+
+    <div class="invoice-actions">
+      <button type="button" class="btn-secondary" (click)="closeInvoice()">Cerrar</button>
+      <button type="button" class="btn-primary" (click)="printInvoice()">Imprimir</button>
+    </div>
   </div>
 }

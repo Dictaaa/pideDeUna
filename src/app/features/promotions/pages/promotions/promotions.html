@@ -1,0 +1,158 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Promociones</h1>
+      <p>Combos tipo "lleva N, paga $X" — se muestran en su propia franja del menú, separada de las categorías.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nueva promoción</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="3" [cols]="5"></app-table-skeleton>
+  } @else if (promotions().length === 0) {
+    <div class="empty-state">Todavía no tienes promociones. Crea la primera.</div>
+  } @else {
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Combo</th>
+            <th>Precio</th>
+            <th>Productos</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (promo of promotions(); track promo.id) {
+            <tr>
+              <td class="cell-strong">{{ promo.name }}</td>
+              <td class="cell-muted">Lleva {{ promo.buyQuantity }}</td>
+              <td>{{ '$' + (+(promo.fixedAmount || 0) | number: '1.0-0') }}</td>
+              <td class="cell-muted">{{ productNames(promo) }}</td>
+              <td>
+                <span class="badge" [class.badge-off]="!promo.isActive">
+                  {{ promo.isActive ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td class="cell-actions">
+                <app-actions-menu [actions]="rowActions(promo)"></app-actions-menu>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>{{ editingId() ? 'Editar promoción' : 'Nueva promoción' }}</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre</span>
+      <input
+        type="text"
+        placeholder="Ej: 2 Hamburguesas x $40.000"
+        [ngModel]="form().name"
+        (ngModelChange)="updateField('name', $event)"
+        name="name"
+      />
+    </label>
+
+    <label class="field">
+      <span>Descripción (opcional)</span>
+      <textarea
+        rows="2"
+        [ngModel]="form().description"
+        (ngModelChange)="updateField('description', $event)"
+        name="description"
+      ></textarea>
+    </label>
+
+    @if (editingId()) {
+      <div class="field">
+        <span>Foto de la tarjeta (opcional — sin foto se usa el color de tu marca)</span>
+        @if (imageError(); as iErr) {
+          <div class="form-error">{{ iErr }}</div>
+        }
+        <div class="promo-image-row">
+          @if (editingImageUrl()) {
+            <img class="promo-image-preview" [src]="editingImageUrl()" alt="" />
+          } @else {
+            <div class="promo-image-preview promo-image-empty">Sin foto</div>
+          }
+          <label class="btn-secondary promo-image-upload-btn">
+            {{ uploadingImage() ? 'Subiendo…' : 'Cambiar foto' }}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="onImageSelected($event)"
+              [disabled]="uploadingImage()"
+              hidden
+            />
+          </label>
+        </div>
+      </div>
+    } @else {
+      <p class="media-hint">Guarda la promoción primero para poder agregarle una foto.</p>
+    }
+
+    <div class="field-row">
+      <label class="field">
+        <span>Lleva (unidades)</span>
+        <input
+          type="number"
+          min="2"
+          [ngModel]="form().buyQuantity"
+          (ngModelChange)="updateField('buyQuantity', $event)"
+          name="buyQuantity"
+        />
+      </label>
+      <label class="field">
+        <span>Precio total del combo (COP)</span>
+        <input
+          type="number"
+          min="0"
+          [ngModel]="form().fixedAmount"
+          (ngModelChange)="updateField('fixedAmount', $event)"
+          name="fixedAmount"
+        />
+      </label>
+    </div>
+
+    @if (editingId()) {
+      <label class="field field-checkbox">
+        <input type="checkbox" [ngModel]="form().isActive" (ngModelChange)="updateField('isActive', $event)" name="isActive" />
+        <span>Promoción activa (visible en el menú)</span>
+      </label>
+    }
+
+    <div class="field">
+      <span>¿Cuáles productos aplican?</span>
+      <div class="product-check-list">
+        @for (p of allProducts(); track p.id) {
+          <label class="product-check-row">
+            <input type="checkbox" [checked]="isProductSelected(p.id)" (change)="toggleProduct(p.id)" />
+            <span>{{ p.name }}</span>
+            <span class="product-check-price">{{ '$' + (+p.price | number: '1.0-0') }}</span>
+          </label>
+        }
+      </div>
+    </div>
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
+}

@@ -28,7 +28,12 @@
         <td class="cell-strong">{{ t.name || ('Mesa ' + t.tableNumber) }}</td>
         <td class="cell-muted">{{ t.area?.name || '—' }}</td>
         <td>{{ t.capacity }}</td>
-        <td><span class="badge" [class]="badgeClass(t.status)">{{ statusLabel(t.status) }}</span></td>
+        <td>
+          <span class="badge" [class]="badgeClass(t.status)">{{ statusLabel(t.status) }}</span>
+          @if (t.hasOpenSession) {
+            <span class="badge badge-success" title="El cliente puede pedir ahora mismo">🟢 Abierta</span>
+          }
+        </td>
         <td class="cell-actions">
           <app-actions-menu [actions]="rowActions(t)"></app-actions-menu>
         </td>

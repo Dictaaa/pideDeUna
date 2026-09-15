@@ -21,7 +21,12 @@
   </div>
 
   <div class="leader">
-    <span class="price">{{ +product().price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+    <div class="price-stack">
+      @if (hasDiscount()) {
+        <span class="price-compare">{{ +product().compareAtPrice! | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+      }
+      <span class="price" [class.price-discounted]="hasDiscount()">{{ +product().price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+    </div>
     <button type="button" class="add-btn" (click)="onAddClick($event)" [attr.aria-label]="'Agregar ' + product().name">
       +
     </button>

@@ -41,6 +41,16 @@ export class Auth {
       .pipe(tap((res) => this.persist(res)));
   }
 
+  /** POST /auth/forgot-password — siempre responde igual, exista o no el correo (por seguridad). */
+  forgotPassword(email: string) {
+    return this.api.post<{ message: string }>(API.AUTH.FORGOT_PASSWORD, { email });
+  }
+
+  /** POST /auth/reset-password — con el token que llega en el enlace. */
+  resetPassword(token: string, newPassword: string) {
+    return this.api.post<{ message: string }>(API.AUTH.RESET_PASSWORD, { token, newPassword });
+  }
+
   logout(): void {
     this._token.set(null);
     this._user.set(null);

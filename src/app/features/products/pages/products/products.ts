@@ -8,6 +8,8 @@ import { AdminProduct, AdminProductMedia, ProductFormValue } from '../../models/
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
 import { AdminCategory } from '../../../categories/models/category.models';
 import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
+import { ModifierGroupAdmin } from '../../../modifier-groups/services/modifier-group-admin';
+import { AdminModifierGroup } from '../../../modifier-groups/models/modifier-group.models';
 
 const EMPTY_FORM: ProductFormValue = {
   name: '',
@@ -15,6 +17,7 @@ const EMPTY_FORM: ProductFormValue = {
   categoryId: '',
   description: '',
   price: 0,
+  compareAtPrice: null,
   isAvailable: true,
   isFeatured: false,
   isRecommended: false,
@@ -42,6 +45,7 @@ export class Products {
   private route = inject(ActivatedRoute);
   private productService = inject(ProductAdmin);
   private categoryService = inject(Category);
+  private modifierGroupService = inject(ModifierGroupAdmin);
 
   slug = this.route.parent!.snapshot.paramMap.get('slug')!;
 
@@ -60,9 +64,15 @@ export class Products {
   uploadingMedia = signal(false);
   mediaError = signal<string | null>(null);
 
+  // Adicionales asignados al producto que se está editando.
+  allModifierGroups = signal<AdminModifierGroup[]>([]);
+  selectedModifierGroupIds = signal<Set<string>>(new Set());
+  savingModifierGroups = signal(false);
+
   constructor() {
     this.reload();
     this.categoryService.list(this.slug).subscribe({ next: (cats) => this.categories.set(cats) });
+    this.modifierGroupService.list(this.slug).subscribe({ next: (groups) => this.allModifierGroups.set(groups) });
   }
 
   reload(): void {
@@ -96,12 +106,14 @@ export class Products {
     this.slugTouched.set(true);
     this.currentMedia.set(product.media ?? []);
     this.mediaError.set(null);
+    this.selectedModifierGroupIds.set(new Set((product.modifierGroups ?? []).map((g) => g.id)));
     this.form.set({
       name: product.name,
       slug: product.slug,
       categoryId: product.categoryId ?? '',
       description: product.description ?? '',
       price: Number(product.price),
+      compareAtPrice: product.compareAtPrice ? Number(product.compareAtPrice) : null,
       isAvailable: product.isAvailable,
       isFeatured: product.isFeatured,
       isRecommended: product.isRecommended,
@@ -134,6 +146,10 @@ export class Products {
     const f = this.form();
     if (!f.name.trim() || !f.slug.trim() || f.price <= 0) {
       this.errorMessage.set('Nombre, slug y un precio mayor a 0 son obligatorios.');
+      return;
+    }
+    if (f.compareAtPrice !== null && f.compareAtPrice <= f.price) {
+      this.errorMessage.set('El precio "antes del descuento" debe ser mayor que el precio actual.');
       return;
     }
     this.saving.set(true);
@@ -180,6 +196,17 @@ export class Products {
     this.productService.remove(this.slug, product.id).subscribe({ next: () => this.reload() });
   }
 
+  badgeClass(product: AdminProduct): string {
+    return 'badge ' + (product.isAvailable ? 'badge-success' : 'badge-neutral');
+  }
+
+  rowActions(product: AdminProduct): RowAction[] {
+    return [
+      { label: 'Editar', icon: '✏️', handler: () => this.openEdit(product) },
+      { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(product), danger: true },
+    ];
+  }
+
   /** Se llama al elegir un archivo en el input de fotos/video del producto que se está editando. */
   onMediaSelected(event: Event): void {
     const productId = this.editingId();
@@ -217,14 +244,33 @@ export class Products {
     });
   }
 
-   badgeClass(product: AdminProduct): string {
-    return product.isAvailable ? 'badge-success' : 'badge-neutral';
+  isModifierGroupSelected(groupId: string): boolean {
+    return this.selectedModifierGroupIds().has(groupId);
   }
 
-  rowActions(product: AdminProduct): RowAction[] {
-    return [
-      { label: 'Editar', icon: '✏️', handler: () => this.openEdit(product) },
-      { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(product), danger: true },
-    ];
+  toggleModifierGroup(groupId: string): void {
+    this.selectedModifierGroupIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  }
+
+  saveModifierGroups(): void {
+    const productId = this.editingId();
+    if (!productId) return;
+
+    this.savingModifierGroups.set(true);
+    this.productService.setModifierGroups(this.slug, productId, Array.from(this.selectedModifierGroupIds())).subscribe({
+      next: () => {
+        this.savingModifierGroups.set(false);
+        this.reload();
+      },
+      error: (err) => {
+        this.savingModifierGroups.set(false);
+        this.errorMessage.set(err?.error?.error || 'No se pudieron guardar los adicionales.');
+      },
+    });
   }
 }

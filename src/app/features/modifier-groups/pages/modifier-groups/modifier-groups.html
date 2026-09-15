@@ -1,0 +1,115 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Adicionales</h1>
+      <p>Grupos de opciones para tus productos — "Adicionales" (queso, tocineta…), "Término de cocción", etc.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nuevo grupo</button>
+  </div>
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="2" [cols]="3"></app-table-skeleton>
+  } @else if (groups().length === 0) {
+    <div class="empty-state">Todavía no tienes grupos de adicionales. Crea el primero.</div>
+  } @else {
+    <div class="groups-grid">
+      @for (group of groups(); track group.id) {
+        <div class="group-card">
+          <div class="group-card-head">
+            <div>
+              <h2>{{ group.name }}</h2>
+              <span class="group-meta">
+                {{ group.required ? 'Obligatorio' : 'Opcional' }} · hasta {{ group.maxSelections }}
+              </span>
+            </div>
+            <div class="group-card-actions">
+              <button type="button" class="link-btn" (click)="openEdit(group)">Editar</button>
+              <button type="button" class="link-btn danger" (click)="removeGroup(group)">Eliminar</button>
+            </div>
+          </div>
+
+          <div class="options-list">
+            @for (opt of group.options ?? []; track opt.id) {
+              <div class="option-line">
+                <span class="option-name">{{ opt.name }}</span>
+                <span class="option-price">{{ '$' + (+opt.price | number: '1.0-0') }}</span>
+                <button type="button" class="link-btn danger" (click)="removeOption(group, opt)">Quitar</button>
+              </div>
+            }
+            @if ((group.options ?? []).length === 0) {
+              <p class="no-options">Sin opciones todavía.</p>
+            }
+          </div>
+
+          @if (addingOptionGroupId() === group.id) {
+            <div class="add-option-row">
+              <input type="text" placeholder="Nombre (ej: Queso)" [ngModel]="optionName()" (ngModelChange)="optionName.set($event)" name="optionName" />
+              <input type="number" min="0" placeholder="Precio" [ngModel]="optionPrice()" (ngModelChange)="optionPrice.set($event)" name="optionPrice" />
+              <button type="button" class="btn-secondary" (click)="cancelAddOption()">Cancelar</button>
+              <button type="button" class="btn-primary" (click)="confirmAddOption(group)">Agregar</button>
+            </div>
+          } @else {
+            <button type="button" class="link-btn add-option-link" (click)="startAddOption(group)">+ Agregar opción</button>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>{{ editingGroupId() ? 'Editar grupo' : 'Nuevo grupo' }}</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre</span>
+      <input type="text" placeholder="Ej: Adicionales" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" name="name" />
+    </label>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Mínimo</span>
+        <input type="number" min="0" [ngModel]="form().minSelections" (ngModelChange)="updateField('minSelections', $event)" name="minSelections" />
+      </label>
+      <label class="field">
+        <span>Máximo</span>
+        <input type="number" min="1" [ngModel]="form().maxSelections" (ngModelChange)="updateField('maxSelections', $event)" name="maxSelections" />
+      </label>
+    </div>
+
+    <label class="field field-checkbox">
+      <input type="checkbox" [ngModel]="form().required" (ngModelChange)="updateField('required', $event)" name="required" />
+      <span>Obligatorio (el cliente debe elegir al menos una opción)</span>
+    </label>
+
+    @if (!editingGroupId()) {
+      <div class="draft-options">
+        <span class="draft-options-label">Opciones iniciales (opcional, puedes agregarlas después)</span>
+        @for (opt of draftOptions(); track opt.name; let i = $index) {
+          <div class="option-line">
+            <span class="option-name">{{ opt.name }}</span>
+            <span class="option-price">{{ '$' + (opt.price | number: '1.0-0') }}</span>
+            <button type="button" class="link-btn danger" (click)="removeDraftOption(i)">Quitar</button>
+          </div>
+        }
+        <div class="add-option-row">
+          <input type="text" placeholder="Nombre" [ngModel]="draftOptionName()" (ngModelChange)="draftOptionName.set($event)" name="draftOptionName" />
+          <input type="number" min="0" placeholder="Precio" [ngModel]="draftOptionPrice()" (ngModelChange)="draftOptionPrice.set($event)" name="draftOptionPrice" />
+          <button type="button" class="btn-secondary" (click)="addDraftOption()">+ Agregar</button>
+        </div>
+      </div>
+    }
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </div>
+}

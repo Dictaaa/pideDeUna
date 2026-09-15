@@ -8,7 +8,6 @@
   margin-bottom: 10px;
   cursor: pointer;
   background: var(--bg);
-  box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.05);
   transition: border-color 0.15s ease;
 }
 .product-row:hover {
@@ -78,9 +77,23 @@
   align-items: center;
   gap: 10px;
 }
+.price-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
 .price {
   font-weight: 700;
   font-size: 14px;
+}
+.price-compare {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+.price-discounted {
+  color: #c0392b;
 }
 .add-btn {
   width: 28px;

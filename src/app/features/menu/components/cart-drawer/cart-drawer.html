@@ -7,7 +7,7 @@
   </div>
 
   <div class="cart-drawer-body">
-    @if (lines().length === 0) {
+    @if (lines().length === 0 && combos().length === 0) {
       <div class="empty-cart">
         Aún no has agregado platos.<br />
         Toca un plato del menú para empezar.
@@ -25,12 +25,50 @@
             <div class="cart-line-meta">
               {{ line.modifiers.length ? modifierNames(line) : 'Sin adiciones' }}
             </div>
+            @if (line.notes) {
+              <div class="cart-line-notes">"{{ line.notes }}"</div>
+            }
           </div>
           <div class="cart-line-price">
             {{ line.unitPrice * line.quantity | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
           </div>
           <button type="button" class="remove-btn" (click)="removeLine.emit(line.lineId)">✕</button>
         </div>
+      }
+
+       @for (combo of combos(); track combo.comboId) {
+        <div class="cart-line">
+          <div class="cart-line-img placeholder combo-icon">🏷️</div>
+          <div class="cart-line-info">
+            <div class="cart-line-name">{{ combo.promotionName }}</div>
+            <div class="cart-line-meta">{{ comboSelectionsLabel(combo) }}</div>
+            @if (combo.notes) {
+              <div class="cart-line-notes">"{{ combo.notes }}"</div>
+            }
+          </div>
+          <div class="cart-line-price">
+            {{ combo.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+          </div>
+          <button type="button" class="remove-btn" (click)="removeCombo.emit(combo.comboId)">✕</button>
+        </div>
+      }
+
+      @if (!canOrder()) {
+        <div class="cart-view-only-note">
+          👀 Por ahora solo puedes ver el menú. Pídele al mesero que abra tu mesa para poder confirmar este pedido.
+        </div>
+      } @else {
+        <label class="cart-name-field">
+          <span>Tu nombre y apellido</span>
+          <input
+            type="text"
+            placeholder="Ej: Juan Pérez"
+            [ngModel]="customerName()"
+            (ngModelChange)="customerNameChange.emit($event)"
+            name="customerName"
+            [disabled]="sending()"
+          />
+        </label>
       }
     }
   </div>
@@ -40,9 +78,16 @@
       <span>Total</span>
       <span>{{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
     </div>
-    <button type="button" class="add-cart-btn" [disabled]="lines().length === 0" (click)="sendOrder.emit()">
-      <span>Enviar a cocina</span>
-      <span>{{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+    <button
+      type="button"
+      class="add-cart-btn"
+      [disabled]="(lines().length === 0 && combos().length === 0) || !canOrder() || sending() || !customerName().trim()"
+      (click)="sendOrder.emit()"
+    >
+      <span>{{ sending() ? 'Enviando…' : 'Confirmar pedido' }}</span>
+      @if (!sending()) {
+        <span>{{ total() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+      }
     </button>
   </div>
 </div>

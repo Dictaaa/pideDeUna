@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output  } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Auth } from '../../services/auth';
 
@@ -26,12 +26,16 @@ export class Sidebar {
 
   private allItems = computed<NavItem[]>(() => [
     { label: 'Dashboard', icon: '📊', path: `/admin/${this.slug()}/dashboard`, roles: ADMIN_ROLES },
-    { label: 'Pedidos', icon: '🧾', path: `/admin/${this.slug()}/pedidos`, roles: [...ADMIN_ROLES, 'WAITER'] },
+    { label: 'Pedidos', icon: '🧾', path: `/admin/${this.slug()}/pedidos`, roles: [...ADMIN_ROLES, 'WAITER', 'CASHIER'] },
     { label: 'Cocina', icon: '🍳', path: `/admin/${this.slug()}/cocina`, roles: [...ADMIN_ROLES, 'KITCHEN'] },
     { label: 'Categorías', icon: '🗂️', path: `/admin/${this.slug()}/categorias`, roles: ADMIN_ROLES },
     { label: 'Productos', icon: '🍽️', path: `/admin/${this.slug()}/productos`, roles: ADMIN_ROLES },
-    { label: 'Áreas', icon: '📍', path: `/admin/${this.slug()}/areas`, roles: ADMIN_ROLES },
+    { label: 'Adicionales', icon: '➕', path: `/admin/${this.slug()}/adicionales`, roles: ADMIN_ROLES },
+    { label: 'Promociones', icon: '🏷️', path: `/admin/${this.slug()}/promociones`, roles: ADMIN_ROLES },
     { label: 'Mesas', icon: '🪑', path: `/admin/${this.slug()}/mesas`, roles: ADMIN_ROLES },
+    { label: 'Áreas', icon: '📍', path: `/admin/${this.slug()}/areas`, roles: ADMIN_ROLES },
+    { label: 'Historial', icon: '📖', path: `/admin/${this.slug()}/historial`, roles: [...ADMIN_ROLES, 'WAITER', 'CASHIER'] },
+    { label: 'Auditoría', icon: '🛡️', path: `/admin/${this.slug()}/auditoria`, roles: ADMIN_ROLES },
     { label: 'Usuarios', icon: '👥', path: `/admin/${this.slug()}/usuarios`, roles: ADMIN_ROLES },
     { label: 'Plan', icon: '💳', path: `/admin/${this.slug()}/plan`, roles: ADMIN_ROLES },
     { label: 'Configuración', icon: '⚙️', path: `/admin/${this.slug()}/configuracion`, roles: ADMIN_ROLES },

@@ -20,7 +20,17 @@
 
           <ul class="kitchen-items">
             @for (item of order.items; track item.id) {
-              <li>{{ item.quantity }} × {{ item.productName }}</li>
+              <li>
+                <div class="kitchen-item-main">{{ item.quantity }} × {{ item.productName }}</div>
+                @if (item.modifiers?.length) {
+  <div class="kitchen-item-extra">
+    + {{ modifierNamesLabel(item) }}
+  </div>
+}
+                @if (item.notes) {
+                  <div class="kitchen-item-notes">⚠ {{ item.notes }}</div>
+                }
+              </li>
             }
           </ul>
 

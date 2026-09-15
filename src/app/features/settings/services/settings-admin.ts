@@ -21,4 +21,9 @@ export class SettingsAdmin {
   updateBranding(slug: string, value: { primaryColor: string; secondaryColor: string; fontFamily: string }) {
     return this.api.patch<Restaurant>(API.RESTAURANT.UPDATE_PROFILE(slug), value);
   }
+
+  /** El NIT vive en el perfil del restaurante (no en RestaurantSettings) — se imprime en el recibo. */
+  updateNit(slug: string, nit: string) {
+    return this.api.patch<Restaurant>(API.RESTAURANT.UPDATE_PROFILE(slug), { nit });
+  }
 }

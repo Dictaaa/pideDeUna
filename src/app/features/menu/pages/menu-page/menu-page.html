@@ -34,17 +34,21 @@
     <header class="top">
       <div class="top-inner">
         <div class="brand">
-  @if (r.logoUrl) {
-    <img class="brand-logo" [src]="r.logoUrl" alt="" />
-  } @else {
-    <div class="brand-mark">{{ r.name.charAt(0) }}</div>
-  }
-  <div class="brand-text">
-    <h1>{{ r.name }}</h1>
-  </div>
-</div>
+          @if (r.logoUrl) {
+            <img class="brand-logo" [src]="r.logoUrl" alt="" />
+          } @else {
+            <div class="brand-mark">{{ r.name.charAt(0) }}</div>
+          }
+          <div class="brand-text">
+            <h1>{{ r.name }}</h1>
+            <p>Menú digital · PideDeUna</p>
+          </div>
+        </div>
         @if (mesaToken) {
-          <div class="table-badge"><span class="dot"></span><span>Mesa</span></div>
+          <div class="table-badge" [class.table-badge-closed]="!canOrder()">
+            <span class="dot"></span>
+            <span>{{ canOrder() ? 'Mesa' : 'Solo ver' }}</span>
+          </div>
         }
       </div>
 
@@ -56,7 +60,39 @@
       ></app-category-nav>
     </header>
 
+    @if (mesaToken && !canOrder()) {
+      <div class="view-only-banner">
+        👀 Por ahora solo puedes ver el menú — pídele al mesero que abra tu mesa para poder pedir.
+      </div>
+    }
+
     <main>
+      @if (promotions().length > 0) {
+        <section class="promo-section">
+          <h2 class="promo-title">🏷️ Promociones</h2>
+          <div class="promo-scroll">
+            @for (promo of promotions(); track promo.id) {
+              <button
+                type="button"
+                class="promo-card"
+                [class.has-photo]="promo.imageUrl"
+                [style.backgroundImage]="promo.imageUrl ? 'url(' + promo.imageUrl + ')' : null"
+                (click)="openComboSheet(promo)"
+              >
+                <span class="promo-name">{{ promo.name }}</span>
+                @if (promo.description) {
+                  <span class="promo-desc">{{ promo.description }}</span>
+                }
+                <div class="promo-foot">
+                  <span class="promo-qty">Lleva {{ promo.buyQuantity }}</span>
+                  <span class="promo-price">{{ '$' + (+(promo.fixedAmount ?? 0) | number: '1.0-0') }}</span>
+                </div>
+              </button>
+            }
+          </div>
+        </section>
+      }
+
       @for (cat of categories(); track cat.id) {
         <section class="category-section" [id]="'cat-' + cat.id">
           <div class="category-title">
@@ -83,21 +119,29 @@
 
     <app-product-sheet
       [product]="openProduct()"
-      (closed)="closeProductSheet()"
+      [combo]="openCombo()"
+      (closed)="closeSheet()"
       (addedToCart)="onAddedFromSheet($event)"
+      (addedCombo)="onAddedCombo($event)"
     ></app-product-sheet>
 
     <app-cart-drawer
       [isOpen]="cartDrawerOpen()"
       [lines]="cart.lines()"
+      [combos]="cart.combos()"
       [total]="cart.total()"
+      [canOrder]="canOrder()"
+      [customerName]="customerName()"
+      [sending]="sendingOrder()"
       (closed)="cartDrawerOpen.set(false)"
       (removeLine)="cart.removeLine($event)"
+      (removeCombo)="cart.removeCombo($event)"
+      (customerNameChange)="customerName.set($event)"
       (sendOrder)="sendOrder()"
     ></app-cart-drawer>
 
-    @if (orderSentMessage(); as msg) {
-      <div class="toast show">{{ msg }}</div>
+    @if (orderError(); as msg) {
+      <div class="toast show toast-error">{{ msg }}</div>
     }
   }
 }

@@ -1,0 +1,73 @@
+<div class="tracking-page">
+  @if (loading()) {
+    <div class="state-message">Cargando tu pedido…</div>
+  } @else if (errorMessage()) {
+    <div class="state-message error">{{ errorMessage() }}</div>
+  } @else if (status(); as s) {
+    <div class="tracking-card">
+      <div class="tracking-header">
+        @if (restaurant(); as r) {
+          @if (r.logoUrl) {
+            <img class="tracking-logo" [src]="r.logoUrl" alt="" />
+          } @else {
+            <div class="tracking-logo-mark">{{ r.name.charAt(0) }}</div>
+          }
+          <span class="tracking-restaurant-name">{{ r.name }}</span>
+        }
+        <h1>Pedido #{{ s.orderNumber }}</h1>
+      </div>
+
+      @if (stage() === 'CANCELLED') {
+        <div class="cancelled-box">
+          <span class="cancelled-icon">❌</span>
+          <p>Este pedido fue cancelado.</p>
+        </div>
+      } @else {
+        <div class="progress-track">
+          <div
+            class="progress-fill"
+            [class.step-2]="isStageActive('PREPARING')"
+            [class.step-3]="isStageActive('READY')"
+          ></div>
+        </div>
+
+        <div class="stages">
+          <div class="stage" [class.active]="isStageActive('PENDING')">
+            <span class="stage-icon" [class.bounce]="stage() === 'PENDING'">📝</span>
+            <span class="stage-label">Pendiente</span>
+          </div>
+          <div class="stage" [class.active]="isStageActive('PREPARING')">
+            <span class="stage-icon" [class.bounce]="stage() === 'PREPARING'">🍳</span>
+            <span class="stage-label">En cocina</span>
+          </div>
+          <div class="stage" [class.active]="isStageActive('READY')">
+            <span class="stage-icon" [class.bounce]="stage() === 'READY'">🛎️</span>
+            <span class="stage-label">Listo</span>
+          </div>
+        </div>
+
+        <p class="stage-message" [class.ready]="stage() === 'READY'">{{ stageMessage() }}</p>
+      }
+
+      <div class="order-summary">
+        <h2>Tu pedido</h2>
+        <div class="summary-items">
+          @for (item of s.items; track item.productName + item.quantity) {
+            <div class="summary-item-row">
+              <span class="summary-item-name">{{ item.quantity }} × {{ item.productName }}</span>
+            </div>
+            @if (item.notes) {
+              <div class="summary-item-notes">"{{ item.notes }}"</div>
+            }
+          }
+        </div>
+        <div class="summary-total">
+          <span>Total</span>
+          <span>{{ '$' + (+s.total | number: '1.0-0') }}</span>
+        </div>
+      </div>
+
+      <a class="back-link" [routerLink]="['/', slug]">← Volver al menú</a>
+    </div>
+  }
+</div>

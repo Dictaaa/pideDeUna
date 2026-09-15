@@ -56,6 +56,12 @@ export class KitchenBoard implements OnDestroy {
     return BUTTON_LABEL[order.status] ?? '';
   }
 
+  modifierNamesLabel(item: Order['items'][number]): string {
+  return (item.modifiers ?? [])
+    .map((m) => m.modifierName)
+    .join(', ');
+}
+
   isAdvancing(order: Order): boolean {
     return this.advancingIds().has(order.id);
   }
@@ -69,7 +75,7 @@ export class KitchenBoard implements OnDestroy {
     return this.minutesWaiting(order) >= 10;
   }
 
-    advance(order: Order): void {
+  advance(order: Order): void {
     if (this.isAdvancing(order)) return;
 
     this.advancingIds.set(new Set([...this.advancingIds(), order.id]));

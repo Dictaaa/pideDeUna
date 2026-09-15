@@ -18,6 +18,7 @@ export interface AdminTable {
   areaId: string | null;
   area?: AdminArea | null;
   qrCodes: TableQrCode[];
+  hasOpenSession: boolean;
 }
 
 export interface TableFormValue {

@@ -22,6 +22,13 @@ export class TableAdmin {
   regenerateQr(slug: string, id: string) {
     return this.api.post<TableQrCode>(API.TABLES.REGENERATE_QR(slug, id), {});
   }
+  openSession(slug: string, tableId: string) {
+    return this.api.post<{ id: string; tableId: string; openedAt: string }>(API.TABLE_SESSION.OPEN(slug, tableId), {});
+  }
+
+  closeSession(slug: string, tableId: string) {
+    return this.api.post<{ message: string }>(API.TABLE_SESSION.CLOSE(slug, tableId), {});
+  }
   listAreas(slug: string) {
     return this.api.get<AdminArea[]>(API.AREAS.LIST(slug));
   }
