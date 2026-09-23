@@ -1,0 +1,1 @@
+import{Bt as dI,E as Fa,Jt as ev,it as Pa}from"./chunk-C812bHBT.js";var i=class n{static ɵfac=function(e){return new(e||n)};static ɵcmp=ev({type:n,selectors:[[`app-branch-picker`]],decls:2,vars:0,template:function(e,p){e&1&&(Pa(0,`p`),dI(1,`branch-picker works!`),Fa())},encapsulation:2})};export{i as BranchPicker};

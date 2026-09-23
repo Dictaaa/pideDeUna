@@ -1,1 +1,0 @@
-import{tt as O,yn as m}from"./chunk-CMb9IpfH.js";import{c as I,s as $}from"./main-OF77TDCZ.js";var a=class t{api=m($);getBySlug(e){return this.api.get(I.RESTAURANT.MENU(e))}static ɵfac=function(p){return new(p||t)};static ɵprov=O({token:t,factory:t.ɵfac,providedIn:`root`})};export{a as t};
