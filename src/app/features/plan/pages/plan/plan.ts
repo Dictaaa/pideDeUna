@@ -2,23 +2,26 @@ import { Component, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { PlanAdmin } from '../../services/plan-admin';
-import { PlanInfo, SubscriptionUsage, UsageItem } from '../../models/plan.models';
+import { CompanyService } from '../../../../core/services/company.service';
+import { PlanService } from '../../../../core/services/super-admin.service';
+import { CompanyUsage, UsageItem } from '../../../../core/models/company.model';
+import { Plan as PlanInfo } from '../../../../core/models/company.model';
 import { Skeleton } from '../../../../shared/components/skeleton/skeleton';
 
 interface UsageRow {
-  key: keyof SubscriptionUsage['usage'];
+  key: keyof CompanyUsage['usage'];
   label: string;
   icon: string;
 }
 
+// Sin "categorías" (nunca tuvo límite propio) ni "fotos"/"videos" por
+// separado (se miden juntas en storageMb, no por cantidad de archivos).
 const USAGE_ROWS: UsageRow[] = [
-  { key: 'categories', label: 'Categorías', icon: '🗂️' },
   { key: 'products', label: 'Productos', icon: '🍽️' },
   { key: 'tables', label: 'Mesas', icon: '🪑' },
   { key: 'users', label: 'Usuarios', icon: '👥' },
-  { key: 'photos', label: 'Fotos', icon: '📸' },
-  { key: 'videos', label: 'Videos', icon: '🎥' },
+  { key: 'branches', label: 'Sucursales', icon: '🏬' },
+  { key: 'storageMb', label: 'Almacenamiento (MB)', icon: '📦' },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
@@ -38,14 +41,16 @@ const STATUS_LABELS: Record<string, string> = {
 })
 export class Plan {
   private route = inject(ActivatedRoute);
-  private planService = inject(PlanAdmin);
+  private companyService = inject(CompanyService);
+  private planService = inject(PlanService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+  // Plan es de nivel COMPAÑÍA — no necesita branchSlug.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
   usageRows = USAGE_ROWS;
   statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
 
   loading = signal(true);
-  usage = signal<SubscriptionUsage | null>(null);
+  usage = signal<CompanyUsage | null>(null);
   plans = signal<PlanInfo[]>([]);
   changingPlanId = signal<string | null>(null);
   errorMessage = signal<string | null>(null);
@@ -57,8 +62,8 @@ export class Plan {
   reload(): void {
     this.loading.set(true);
     forkJoin({
-      usage: this.planService.getUsage(this.slug),
-      plans: this.planService.listPlans(),
+      usage: this.companyService.getUsage(this.companySlug),
+      plans: this.planService.list(),
     }).subscribe({
       next: (res) => {
         this.usage.set(res.usage);
@@ -69,7 +74,7 @@ export class Plan {
     });
   }
 
-  usageItem(key: keyof SubscriptionUsage['usage']): UsageItem | null {
+  usageItem(key: keyof CompanyUsage['usage']): UsageItem | null {
     return this.usage()?.usage[key] ?? null;
   }
 
@@ -98,7 +103,7 @@ export class Plan {
     this.changingPlanId.set(plan.id);
     this.errorMessage.set(null);
 
-    this.planService.changePlan(this.slug, plan.id).subscribe({
+    this.companyService.changePlan(this.companySlug, plan.id).subscribe({
       next: () => {
         this.changingPlanId.set(null);
         this.reload();

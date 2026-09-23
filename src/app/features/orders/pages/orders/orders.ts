@@ -2,20 +2,21 @@ import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { OrderAdmin } from '../../services/order-admin';
-import { TableAdmin } from '../../../tables/services/table-admin';
-import { Menu } from '../../../menu/services/menu';
-import { Order, OrderItemLine } from '../../../../core/models/order.models';
-import { AdminTable } from '../../../tables/models/table.models';
-import { MenuCategory, Product } from '../../../../core/models/menu';
+import { Observable, map, of } from 'rxjs';
+
+import { AuthService } from '../../../../core/services/auth.service';
+import { OrderService } from '../../../../core/services/order.service';
+import { TableService, TableSessionService } from '../../../../core/services/table.service';
+import { MenuCategoryService, ModifierGroupService, ProductService } from '../../../../core/services/menu.service';
+import { PromotionService } from '../../../../core/services/promotion.service';
+import { SocketService } from '../../../../core/services/socket.service';
+import { TokenStorageService } from '../../../../core/services/token-storage.service';
+
+import { CreateComboInput, CreateOrderItemInput, Order, OrderItem } from '../../../../core/models/order.model';
+import { EffectiveProduct, MenuCategory, ModifierGroup } from '../../../../core/models/menu.model';
+import { EffectivePromotion } from '../../../../core/models/promotion.model';
+import { RestaurantTable } from '../../../../core/models/table.model';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
-import { ModifierGroupAdmin } from '../../../modifier-groups/services/modifier-group-admin';
-import { AdminModifierGroup } from '../../../modifier-groups/models/modifier-group.models';
-import { PromotionAdmin } from '../../../promotions/services/promotion-admin';
-import { AdminPromotion } from '../../../promotions/models/promotion.models';
-import { SettingsAdmin } from '../../../settings/services/settings-admin';
-import { Auth } from '../../../../core/services/auth';
-import { Invoice } from '../../../../core/models/order.models';
 
 interface DraftItem {
   key: string; // identidad estable para el @for — dos líneas pueden ser el mismo producto con distinta personalización
@@ -36,29 +37,17 @@ interface DraftCombo {
   totalPrice: number; // el precio del combo lo vuelve a calcular el servidor al crear — esto es solo para mostrarlo antes
 }
 
+// Solo los estados que le tocan al SALÓN. En cuanto un pedido pasa a
+// SERVED, desaparece de esta pantalla para todo el mundo — de ahí en
+// adelante es de Caja (features/caja), no de Pedidos.
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pendiente',
   CONFIRMED: 'Confirmado',
   PREPARING: 'En cocina',
   READY: 'Listo',
-  SERVED: 'Entregado',
-  COMPLETED: 'Cobrado',
-  CANCELLED: 'Cancelado',
 };
 
-// Cómo puede haberse cobrado un pedido — cubre efectivo, datáfono
-// aparte, pasarela en línea (si el restaurante la tiene), o "otro".
-// No procesamos el cobro de verdad, solo lo registramos.
-const PAYMENT_METHODS = [
-  { value: 'CASH', label: 'Efectivo' },
-  { value: 'CARD', label: 'Tarjeta (datáfono aparte)' },
-  { value: 'TRANSFER', label: 'Transferencia' },
-  { value: 'WOMPI', label: 'Wompi' },
-  { value: 'EPAYCO', label: 'ePayco' },
-  { value: 'OTHER', label: 'Otro' },
-];
-
-const REFRESH_MS = 8000; // mismo intervalo que usa el tablero de cocina
+const SOCKET_SAFETY_POLL_MS = 30000; // el socket hace el trabajo — esto es solo por si se cae
 
 @Component({
   selector: 'app-orders',
@@ -69,34 +58,40 @@ const REFRESH_MS = 8000; // mismo intervalo que usa el tablero de cocina
 })
 export class Orders implements OnDestroy {
   private route = inject(ActivatedRoute);
-  private orderService = inject(OrderAdmin);
-  private tableService = inject(TableAdmin);
-  private menuService = inject(Menu);
-  private modifierGroupService = inject(ModifierGroupAdmin);
-  private promotionService = inject(PromotionAdmin);
-  private settingsService = inject(SettingsAdmin);
-  private auth = inject(Auth);
+  private auth = inject(AuthService);
+  private orderService = inject(OrderService);
+  private tableService = inject(TableService);
+  private tableSessionService = inject(TableSessionService);
+  private categoryService = inject(MenuCategoryService);
+  private productService = inject(ProductService);
+  private modifierGroupService = inject(ModifierGroupService);
+  private promotionService = inject(PromotionService);
+  private socket = inject(SocketService);
+  private tokenStorage = inject(TokenStorageService);
   private intervalId: ReturnType<typeof setInterval>;
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+  // Con paramsInheritanceStrategy: 'always', companySlug llega heredado
+  // del padre sin tener que subir con route.parent.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
+  branchSlug = this.route.snapshot.paramMap.get('branchSlug')!;
+
   statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
-  paymentMethods = PAYMENT_METHODS;
 
   loading = signal(true);
   orders = signal<Order[]>([]);
-  tables = signal<AdminTable[]>([]);
+  tables = signal<RestaurantTable[]>([]);
   categories = signal<MenuCategory[]>([]);
+  products = signal<EffectiveProduct[]>([]);
 
-  // Todos los adicionales del restaurante — cualquiera puede aplicarse a
+  // Todos los adicionales de la compañía — cualquiera puede aplicarse a
   // cualquier producto al armar el pedido (no dependen de una asignación
   // previa en el maestro de productos; esa es una decisión de cada pedido).
-  allModifierGroups = signal<AdminModifierGroup[]>([]);
-  promotions = signal<AdminPromotion[]>([]);
+  allModifierGroups = signal<ModifierGroup[]>([]);
+  promotions = signal<EffectivePromotion[]>([]);
   pickerMode = signal<'products' | 'promotions'>('products');
 
-  // Armar un combo — solo disponible editando un pedido que ya existe
-  // (para crear el pedido en sí, sin combo, se usa el flujo normal).
-  buildingCombo = signal<AdminPromotion | null>(null);
+  // Armar un combo — disponible tanto creando como editando un pedido.
+  buildingCombo = signal<EffectivePromotion | null>(null);
   comboSelections = signal<Record<string, number>>({});
   panelOpen = signal(false);
   panelMode = signal<'create' | 'edit'>('create');
@@ -115,32 +110,15 @@ export class Orders implements OnDestroy {
   // Personalizar un producto antes de agregarlo (observaciones + adicionales)
   // — aplica igual en modo crear que en modo editar, por eso vive aparte
   // de los dos flujos y no dentro de cada uno.
-  customizingProduct = signal<Product | null>(null);
+  customizingProduct = signal<EffectiveProduct | null>(null);
   customizeNotes = signal('');
   customizeSelectedIds = signal<Set<string>>(new Set());
   addingCustomized = signal(false);
 
-  // Solo se usan al cobrar (order.status === 'READY').
-  paymentMethod = signal('CASH');
-  paymentReference = signal('');
-  charging = signal(false);
   serving = signal(false);
-  // Configuración de propina del restaurante — se consulta una vez,
-  // la decide el admin en Configuración, no se inventa por pedido.
-  tipsAllowed = signal(false);
-  tipRate = signal(0);
-  includeTip = signal(true);
 
-  // El recibo, listo para imprimir, justo después de cobrar.
-  printingInvoice = signal<Invoice | null>(null);
-  loadingInvoice = signal(false);
-
-  /** Un cajero que NO es también mesero/admin no puede crear pedidos ni agregarles productos — solo cobrar. */
-  isCashierOnly = computed(() => this.auth.hasRole('CASHIER') && !this.auth.hasRole('WAITER', 'RESTAURANT_ADMIN', 'SUPER_ADMIN'));
-
-  /** Entregar el plato (READY -> SERVED) es de mesera/admin. Cobrar (SERVED -> COMPLETED) es solo de caja/admin. */
+  /** Entregar el plato (READY -> SERVED) es de mesera/admin — de ahí en adelante, el pedido es de Caja. */
   canServe = computed(() => this.auth.hasRole('WAITER', 'RESTAURANT_ADMIN', 'SUPER_ADMIN'));
-  canCharge = computed(() => this.auth.hasRole('CASHIER', 'RESTAURANT_ADMIN', 'SUPER_ADMIN'));
 
   draftTotal = computed(
     () =>
@@ -152,8 +130,8 @@ export class Orders implements OnDestroy {
     const selected = this.customizeSelectedIds();
     let extra = 0;
     for (const group of this.allModifierGroups()) {
-      for (const opt of group.options ?? []) {
-        if (selected.has(opt.id)) extra += Number(opt.price);
+      for (const mod of group.modifiers ?? []) {
+        if (selected.has(mod.id)) extra += Number(mod.price);
       }
     }
     return extra;
@@ -161,62 +139,73 @@ export class Orders implements OnDestroy {
 
   customizeUnitTotal = computed(() => {
     const p = this.customizingProduct();
-    return p ? Number(p.price) + this.customizeExtraPrice() : 0;
+    return p ? Number(p.effectivePrice) + this.customizeExtraPrice() : 0;
   });
 
   comboTotalSelected = computed(() => Object.values(this.comboSelections()).reduce((a, b) => a + b, 0));
 
   constructor() {
     this.reload();
-    this.tableService.list(this.slug).subscribe({ next: (tables) => this.tables.set(tables) });
-    this.menuService.getBySlug(this.slug).subscribe({
-      next: (res) => {
-        this.categories.set(res.categories);
-        this.pickerCategoryId.set(res.categories[0]?.id ?? null);
+
+    this.tableService.list(this.companySlug, this.branchSlug).subscribe({ next: (tables) => this.tables.set(tables) });
+
+    this.categoryService.listForBranch(this.companySlug, this.branchSlug).subscribe({
+      next: (cats) => {
+        this.categories.set(cats);
+        this.pickerCategoryId.set(cats[0]?.id ?? null);
       },
       error: (err) => {
         console.error('[Orders] No se pudo cargar el menú para el selector de productos:', err);
         this.errorMessage.set('No se pudo cargar el menú. Revisa la consola del navegador.');
       },
     });
-    this.modifierGroupService.list(this.slug).subscribe({
+    this.productService.listForBranch(this.companySlug, this.branchSlug).subscribe({
+      next: (products) => this.products.set(products),
+      error: (err) => console.error('[Orders] No se pudieron cargar los productos:', err),
+    });
+    this.modifierGroupService.list(this.companySlug).subscribe({
       next: (groups) => this.allModifierGroups.set(groups),
       error: (err) => console.error('[Orders] No se pudieron cargar los adicionales:', err),
     });
-    this.promotionService.list(this.slug).subscribe({
-      next: (promos) => this.promotions.set(promos.filter((p) => p.isActive)),
+    this.promotionService.listForBranch(this.companySlug, this.branchSlug, true).subscribe({
+      next: (promos) => this.promotions.set(promos),
       error: (err) => console.error('[Orders] No se pudieron cargar las promociones:', err),
     });
-    this.settingsService.getSettings(this.slug).subscribe({
-      next: (settings) => {
-        this.tipsAllowed.set(settings.allowTips);
-        this.tipRate.set(Number(settings.tipRate));
-      },
-      error: (err) => console.error('[Orders] No se pudo cargar la configuración de propina:', err),
-    });
 
-    // Sin websockets todavía — se refresca sola para que la mesera/cajera
-    // vean pedidos nuevos (incluidos los que mande el cliente por el QR
-    // el día que exista esa pieza) sin tener que recargar la página a mano.
-    this.intervalId = setInterval(() => this.reload(true), REFRESH_MS);
+    // Socket para tiempo real: pedido nuevo, cocina avanzándolo, etc.
+    // El poll de abajo queda solo como red de seguridad, mucho más
+    // espaciado, por si el socket se cae.
+    const token = this.tokenStorage.getToken();
+    if (token) {
+      this.socket.connectAsStaff(token);
+      this.socket.on<{ orderId: string }>('order:created').subscribe(() => this.reload(true));
+      this.socket.on<{ orderId: string; status: string }>('order:status_changed').subscribe(() => this.reload(true));
+    }
+
+    this.intervalId = setInterval(() => this.reload(true), SOCKET_SAFETY_POLL_MS);
   }
 
   ngOnDestroy(): void {
     clearInterval(this.intervalId);
+    this.socket.disconnect();
   }
 
   reload(silent = false): void {
     if (!silent) this.loading.set(true);
-    this.orderService.list(this.slug, 'active').subscribe({
+    // Solo los estados de SALÓN — en cuanto pasa a SERVED, ya no
+    // aparece acá (pasó a ser de Caja).
+    this.orderService.list(this.companySlug, this.branchSlug, ['PENDING', 'CONFIRMED', 'PREPARING', 'READY']).subscribe({
       next: (orders) => {
         this.orders.set(orders);
         this.loading.set(false);
-        // Si el pedido que se está viendo en el panel cambió (p. ej. cocina
-        // lo avanzó), refresca lo que se ve ahí también.
+        // Si el pedido que se está viendo en el panel cambió (p. ej.
+        // cocina lo avanzó), refresca lo que se ve ahí también. Si ya
+        // no está en la lista (pasó a SERVED), cierra el panel solo.
         const current = this.activeOrder();
         if (current) {
           const fresh = orders.find((o) => o.id === current.id);
           if (fresh) this.activeOrder.set(fresh);
+          else this.panelOpen.set(false);
         }
       },
       error: () => this.loading.set(false),
@@ -230,8 +219,9 @@ export class Orders implements OnDestroy {
     return `hace ${minutes} min`;
   }
 
-  productsInPickerCategory(): Product[] {
-    return this.categories().find((c) => c.id === this.pickerCategoryId())?.products ?? [];
+  productsInPickerCategory(): EffectiveProduct[] {
+    const catId = this.pickerCategoryId();
+    return this.products().filter((p) => p.categoryId === catId);
   }
 
   // ---------------- Crear pedido ----------------
@@ -264,6 +254,17 @@ export class Orders implements OnDestroy {
     this.draftItems.set(this.draftItems().map((it, i) => (i === index ? { ...it, quantity: it.quantity + 1 } : it)));
   }
 
+  /** Si la mesa ya tiene una sesión abierta, la reutiliza. Si no, la abre (el mesero está literalmente ahí armando el pedido). */
+  private ensureTableSession(tableId: string): Observable<string> {
+    const table = this.tables().find((t) => t.id === tableId);
+    const openSession = table?.sessions?.find((s) => s.status === 'OPEN');
+    if (openSession) return of(openSession.id);
+
+    return this.tableService
+      .openSession(this.companySlug, this.branchSlug, tableId)
+      .pipe(map((session) => session.id));
+  }
+
   submitCreate(): void {
     if (!this.selectedTableId()) {
       this.errorMessage.set('Elige una mesa — no puede faltar.');
@@ -277,32 +278,40 @@ export class Orders implements OnDestroy {
     this.saving.set(true);
     this.errorMessage.set(null);
 
-    this.orderService
-      .create(this.slug, {
-        tableId: this.selectedTableId(),
-        customerName: this.customerName().trim() || undefined,
-        items: this.draftItems().map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
-          notes: i.notes || undefined,
-          modifierIds: i.modifierIds.length ? i.modifierIds : undefined,
-        })),
-        combos: this.draftCombos().map((c) => ({
-          promotionId: c.promotionId,
-          selections: c.selections.map((s) => ({ productId: s.productId, quantity: s.quantity })),
-        })),
-      })
-      .subscribe({
-        next: () => {
-          this.saving.set(false);
-          this.panelOpen.set(false);
-          this.reload();
-        },
-        error: (err) => {
-          this.saving.set(false);
-          this.errorMessage.set(err?.error?.error || 'No se pudo crear el pedido.');
-        },
-      });
+    this.ensureTableSession(this.selectedTableId()).subscribe({
+      next: (tableSessionId) => {
+        this.orderService
+          .createAsStaff(this.companySlug, this.branchSlug, {
+            tableSessionId,
+            customerName: this.customerName().trim() || undefined,
+            items: this.draftItems().map((i) => ({
+              productId: i.productId,
+              quantity: i.quantity,
+              notes: i.notes || undefined,
+              modifierIds: i.modifierIds.length ? i.modifierIds : undefined,
+            })),
+            combos: this.draftCombos().map((c) => ({
+              promotionId: c.promotionId,
+              selections: c.selections.map((s) => ({ productId: s.productId, quantity: s.quantity })),
+            })),
+          })
+          .subscribe({
+            next: () => {
+              this.saving.set(false);
+              this.panelOpen.set(false);
+              this.reload();
+            },
+            error: (err) => {
+              this.saving.set(false);
+              this.errorMessage.set(err?.error?.error || 'No se pudo crear el pedido.');
+            },
+          });
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.errorMessage.set(err?.error?.error || 'No se pudo abrir la mesa.');
+      },
+    });
   }
 
   // ---------------- Ver / editar pedido existente ----------------
@@ -311,19 +320,17 @@ export class Orders implements OnDestroy {
     this.panelMode.set('edit');
     this.activeOrder.set(order);
     this.pickerCategoryId.set(this.categories()[0]?.id ?? null);
-    this.paymentMethod.set('CASH');
-    this.paymentReference.set('');
     this.errorMessage.set(null);
     this.customizingProduct.set(null);
     this.pickerMode.set('products');
     this.panelOpen.set(true);
   }
 
-  removeOrderItem(item: OrderItemLine): void {
+  removeOrderItem(item: OrderItem): void {
     const order = this.activeOrder();
     if (!order) return;
 
-    this.orderService.removeItem(this.slug, order.id, item.id).subscribe({
+    this.orderService.removeItem(this.companySlug, this.branchSlug, order.id, item.id).subscribe({
       next: (fresh) => {
         this.activeOrder.set(fresh);
         this.reload();
@@ -334,7 +341,7 @@ export class Orders implements OnDestroy {
 
   cancelOrder(order: Order): void {
     if (!confirm(`¿Cancelar el pedido #${order.orderNumber}?`)) return;
-    this.orderService.cancel(this.slug, order.id).subscribe({
+    this.orderService.cancel(this.companySlug, this.branchSlug, order.id).subscribe({
       next: () => {
         this.panelOpen.set(false);
         this.reload();
@@ -342,12 +349,12 @@ export class Orders implements OnDestroy {
     });
   }
 
-  /** La mesera marca que ya entregó el plato — no cobra nada, solo lo manda a caja. */
+  /** La mesera marca que ya entregó el plato — a partir de acá, el pedido pasa a Caja y desaparece de aquí. */
   confirmServe(order: Order): void {
     this.serving.set(true);
     this.errorMessage.set(null);
 
-    this.orderService.serve(this.slug, order.id).subscribe({
+    this.orderService.serve(this.companySlug, this.branchSlug, order.id).subscribe({
       next: () => {
         this.serving.set(false);
         this.panelOpen.set(false);
@@ -360,70 +367,12 @@ export class Orders implements OnDestroy {
     });
   }
 
-  /** La cajera cobra y cierra el pedido — pide método de pago (obligatorio) y referencia externa (opcional). */
-  confirmCharge(order: Order): void {
-    this.charging.set(true);
-    this.errorMessage.set(null);
-
-    this.orderService
-      .charge(this.slug, order.id, {
-        paymentMethod: this.paymentMethod(),
-        transactionReference: this.paymentReference().trim() || undefined,
-        includeTip: this.tipsAllowed() ? this.includeTip() : false,
-      })
-      .subscribe({
-        next: (fresh) => {
-          this.charging.set(false);
-          this.reload();
-          this.showInvoiceFor(fresh);
-        },
-        error: (err) => {
-          this.charging.set(false);
-          this.errorMessage.set(err?.error?.error || 'No se pudo registrar el cobro.');
-        },
-      });
-  }
-
-  /** Trae el recibo recién generado y lo deja listo para imprimir. */
-  private showInvoiceFor(order: Order): void {
-    this.loadingInvoice.set(true);
-    this.orderService.getInvoice(this.slug, order.id).subscribe({
-      next: (invoice) => {
-        this.loadingInvoice.set(false);
-        this.panelOpen.set(false);
-        this.printingInvoice.set(invoice);
-      },
-      error: () => {
-        this.loadingInvoice.set(false);
-        this.panelOpen.set(false); // el cobro sí funcionó — solo no se pudo traer el recibo para mostrarlo
-      },
-    });
-  }
-
-  printInvoice(): void {
-    window.print();
-  }
-
-  closeInvoice(): void {
-    this.printingInvoice.set(null);
-  }
-
-  formatInvoiceDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleString('es-CO', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  }
-
   closePanel(): void {
     this.panelOpen.set(false);
   }
 
-  modifierNamesLabel(item: OrderItemLine): string {
-    return item.modifiers.map((m) => m.modifierName).join(', ');
+  modifierNamesLabel(item: OrderItem): string {
+    return (item.modifiers ?? []).map((m) => m.modifierName).join(', ');
   }
 
   comboSelectionsLabel(combo: DraftCombo): string {
@@ -432,7 +381,7 @@ export class Orders implements OnDestroy {
 
   // ---------------- Personalizar (observaciones + adicionales) ----------------
 
-  openCustomize(product: Product): void {
+  openCustomize(product: EffectiveProduct): void {
     this.customizingProduct.set(product);
     this.customizeNotes.set('');
     this.customizeSelectedIds.set(new Set());
@@ -442,20 +391,20 @@ export class Orders implements OnDestroy {
     this.customizingProduct.set(null);
   }
 
-  isCustomizeSelected(optionId: string): boolean {
-    return this.customizeSelectedIds().has(optionId);
+  isCustomizeSelected(modifierId: string): boolean {
+    return this.customizeSelectedIds().has(modifierId);
   }
 
-  toggleCustomizeOption(group: AdminModifierGroup, optionId: string): void {
+  toggleCustomizeOption(group: ModifierGroup, modifierId: string): void {
     this.customizeSelectedIds.update((current) => {
       const next = new Set(current);
       if (group.maxSelections === 1) {
-        for (const opt of group.options ?? []) next.delete(opt.id);
-        next.add(optionId);
-      } else if (next.has(optionId)) {
-        next.delete(optionId);
+        for (const mod of group.modifiers ?? []) next.delete(mod.id);
+        next.add(modifierId);
+      } else if (next.has(modifierId)) {
+        next.delete(modifierId);
       } else if (next.size < group.maxSelections) {
-        next.add(optionId);
+        next.add(modifierId);
       }
       return next;
     });
@@ -468,8 +417,8 @@ export class Orders implements OnDestroy {
     const selectedIds = Array.from(this.customizeSelectedIds());
     const modifierNames: string[] = [];
     for (const group of this.allModifierGroups()) {
-      for (const opt of group.options ?? []) {
-        if (selectedIds.includes(opt.id)) modifierNames.push(opt.name);
+      for (const mod of group.modifiers ?? []) {
+        if (selectedIds.includes(mod.id)) modifierNames.push(mod.name);
       }
     }
     const notes = this.customizeNotes().trim();
@@ -495,26 +444,26 @@ export class Orders implements OnDestroy {
     const order = this.activeOrder();
     if (!order) return;
 
+    const input: CreateOrderItemInput = {
+      productId: product.id,
+      quantity: 1,
+      notes: notes || undefined,
+      modifierIds: selectedIds.length ? selectedIds : undefined,
+    };
+
     this.addingCustomized.set(true);
-    this.orderService
-      .addItem(this.slug, order.id, {
-        productId: product.id,
-        quantity: 1,
-        notes: notes || undefined,
-        modifierIds: selectedIds.length ? selectedIds : undefined,
-      })
-      .subscribe({
-        next: (fresh) => {
-          this.addingCustomized.set(false);
-          this.activeOrder.set(fresh);
-          this.customizingProduct.set(null);
-          this.reload();
-        },
-        error: (err) => {
-          this.addingCustomized.set(false);
-          this.errorMessage.set(err?.error?.error || 'No se pudo agregar el producto.');
-        },
-      });
+    this.orderService.addItem(this.companySlug, this.branchSlug, order.id, input).subscribe({
+      next: (fresh) => {
+        this.addingCustomized.set(false);
+        this.activeOrder.set(fresh);
+        this.customizingProduct.set(null);
+        this.reload();
+      },
+      error: (err) => {
+        this.addingCustomized.set(false);
+        this.errorMessage.set(err?.error?.error || 'No se pudo agregar el producto.');
+      },
+    });
   }
 
   // ---------------- Combos (promociones) ----------------
@@ -524,7 +473,7 @@ export class Orders implements OnDestroy {
     this.pickerCategoryId.set(categoryId);
   }
 
-    openBuildCombo(promo: AdminPromotion): void {
+  openBuildCombo(promo: EffectivePromotion): void {
     // Un solo producto en el combo: no hay nada que elegir — se agrega
     // directo con la cantidad completa, sin mostrar la pantalla de "+/–".
     if (promo.products.length === 1) {
@@ -551,7 +500,7 @@ export class Orders implements OnDestroy {
 
   incrementComboQty(productId: string): void {
     const promo = this.buildingCombo();
-    if (!promo || this.comboTotalSelected() >= promo.buyQuantity!) return;
+    if (!promo || this.comboTotalSelected() >= (promo.buyQuantity ?? 0)) return;
     this.comboSelections.update((s) => ({ ...s, [productId]: (s[productId] ?? 0) + 1 }));
   }
 
@@ -585,7 +534,7 @@ export class Orders implements OnDestroy {
             productName: productMap.get(s.productId)?.name ?? '',
             quantity: s.quantity,
           })),
-          totalPrice: Number(promo.fixedAmount ?? 0),
+          totalPrice: Number(promo.effectiveFixedAmount ?? promo.fixedAmount ?? 0),
         },
       ]);
       this.buildingCombo.set(null);
@@ -595,8 +544,10 @@ export class Orders implements OnDestroy {
     const order = this.activeOrder();
     if (!order) return;
 
+    const input: CreateComboInput = { promotionId: promo.id, selections };
+
     this.addingCustomized.set(true);
-    this.orderService.addCombo(this.slug, order.id, promo.id, selections).subscribe({
+    this.orderService.addCombo(this.companySlug, this.branchSlug, order.id, input).subscribe({
       next: (fresh) => {
         this.addingCustomized.set(false);
         this.activeOrder.set(fresh);

@@ -29,14 +29,14 @@
           </div>
 
           <div class="options-list">
-            @for (opt of group.options ?? []; track opt.id) {
+            @for (mod of group.modifiers ?? []; track mod.id) {
               <div class="option-line">
-                <span class="option-name">{{ opt.name }}</span>
-                <span class="option-price">{{ '$' + (+opt.price | number: '1.0-0') }}</span>
-                <button type="button" class="link-btn danger" (click)="removeOption(group, opt)">Quitar</button>
+                <span class="option-name">{{ mod.name }}</span>
+                <span class="option-price">{{ '$' + (+mod.price | number: '1.0-0') }}</span>
+                <button type="button" class="link-btn danger" (click)="removeOption(mod)">Quitar</button>
               </div>
             }
-            @if ((group.options ?? []).length === 0) {
+            @if ((group.modifiers ?? []).length === 0) {
               <p class="no-options">Sin opciones todavía.</p>
             }
           </div>

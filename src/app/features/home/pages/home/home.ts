@@ -1,8 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { PlanAdmin } from '../../../plan/services/plan-admin';
-import { PlanInfo } from '../../../plan/models/plan.models';
+import { PlanService } from '../../../../core/services/super-admin.service';
+import { Plan } from '../../../../core/models/company.model';
 import { Skeleton } from '../../../../shared/components/skeleton/skeleton';
 
 interface FeatureBlock {
@@ -34,6 +34,11 @@ const FEATURES: FeatureBlock[] = [
   },
 ];
 
+// No hay registro público — el equipo de PideDeUna crea cada
+// compañía a mano después de hablar contigo. Todos los "empezar"
+// de esta página apuntan acá, no a un formulario de registro.
+const WHATSAPP_URL = 'https://wa.me/573154789845';
+
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -42,16 +47,19 @@ const FEATURES: FeatureBlock[] = [
   styleUrl: './home.scss',
 })
 export class Home {
-  private planService = inject(PlanAdmin);
+  private planService = inject(PlanService);
 
   features = FEATURES;
+  whatsappUrl = WHATSAPP_URL;
   loadingPlans = signal(true);
-  plans = signal<PlanInfo[]>([]);
+  plans = signal<Plan[]>([]);
 
   constructor() {
-    this.planService.listPlans().subscribe({
+    this.planService.list().subscribe({
       next: (plans) => {
-        this.plans.set(plans);
+        // Por si acaso el backend no filtra solo: un plan discontinuado
+        // no debería aparecer en la vitrina pública.
+        this.plans.set(plans.filter((p) => p.isActive));
         this.loadingPlans.set(false);
       },
       error: () => this.loadingPlans.set(false),

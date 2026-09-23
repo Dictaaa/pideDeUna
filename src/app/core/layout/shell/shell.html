@@ -1,17 +1,19 @@
 <div class="shell">
   <app-navbar
-    [restaurantName]="restaurant()?.name ?? ''"
-    [restaurantLogoUrl]="restaurant()?.logoUrl ?? null"
-    [userName]="userName"
+    [companySlug]="companySlug"
+    [branchSlug]="restaurant()?.slug ?? null"
+    [restaurantName]="company()?.name ?? ''"
+    [restaurantLogoUrl]="company()?.logoUrl ?? null"
     (toggleSidebar)="toggleSidebar()"
-    (logout)="logout()"
   ></app-navbar>
 
   <div class="shell-body">
-    @if (sidebarOpen()) {
-      <div class="sidebar-backdrop" (click)="toggleSidebar()"></div>
-    }
-    <app-sidebar [slug]="slug" [isOpen]="sidebarOpen()" (itemSelected)="sidebarOpen.set(false)"></app-sidebar>
+    <app-sidebar
+      [companySlug]="companySlug"
+      [branchSlug]="restaurant()?.slug ?? null"
+      [isOpen]="sidebarOpen()"
+    ></app-sidebar>
+
     <main class="shell-content">
       <router-outlet></router-outlet>
     </main>

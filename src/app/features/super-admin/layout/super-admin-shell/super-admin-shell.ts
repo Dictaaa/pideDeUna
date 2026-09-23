@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { Auth } from '../../../../core/services/auth';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-super-admin-shell',
@@ -10,10 +10,10 @@ import { Auth } from '../../../../core/services/auth';
   styleUrl: './super-admin-shell.scss',
 })
 export class SuperAdminShell {
-  private auth = inject(Auth);
+  private auth = inject(AuthService);
   private router = inject(Router);
 
-  userName = this.auth.user()?.name ?? '';
+  userName = this.auth.me()?.user.name ?? '';
 
   logout(): void {
     this.auth.logout();

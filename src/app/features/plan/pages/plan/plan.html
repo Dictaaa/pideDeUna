@@ -69,12 +69,11 @@
             <span class="plan-price">{{ '$' + (+plan.priceMonthly | number: '1.0-0') }}<small>/mes</small></span>
 
             <ul class="plan-limits">
-              <li>{{ plan.maxCategories ?? 'Sin límite' }} categorías</li>
               <li>{{ plan.maxProducts ?? 'Sin límite' }} productos</li>
               <li>{{ plan.maxTables ?? 'Sin límite' }} mesas</li>
               <li>{{ plan.maxUsers ?? 'Sin límite' }} usuarios</li>
-              <li>{{ plan.maxPhotos ?? 'Sin límite' }} fotos</li>
-              <li>{{ plan.maxVideos ?? 'Sin límite' }} videos</li>
+              <li>{{ plan.maxBranches ?? 'Sin límite' }} sucursales</li>
+              <li>{{ plan.storageQuotaMb }} MB de almacenamiento</li>
             </ul>
 
             <button

@@ -1,0 +1,483 @@
+@use '../../../../shared/styles/admin-page' as *;
+
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.order-card {
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  background: var(--bg);
+  cursor: pointer;
+  font-family: var(--font);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+
+  &:hover {
+    border-color: var(--ink-faint);
+  }
+  &:active {
+    transform: scale(0.99);
+  }
+
+  &.status-READY {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+  }
+}
+
+.order-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.order-number {
+  font-weight: 800;
+  font-size: 15px;
+}
+.order-table {
+  font-size: 13px;
+  font-weight: 600;
+}
+.order-customer {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.order-items-summary {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.order-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.order-total {
+  font-weight: 700;
+  font-size: 13px;
+}
+.order-time {
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.panel-sub {
+  margin: -6px 0 4px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.draft-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.draft-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+.draft-name {
+  flex: 1;
+}
+.draft-row-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.draft-extra {
+  font-size: 11.5px;
+  color: var(--primary-ink);
+  font-weight: 600;
+}
+.draft-notes {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+.draft-qty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.draft-price {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.draft-total {
+  text-align: right;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.step-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.picker {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.picker-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 8px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.picker-tab {
+  flex: 0 0 auto;
+  border: none;
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+
+  &.active {
+    background: var(--primary);
+    color: #fff;
+  }
+}
+.picker-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+.picker-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background: var(--surface);
+  }
+}
+.picker-price {
+  font-weight: 700;
+  color: var(--primary-ink);
+}
+
+.panel-actions-spread {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.charge-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h3 {
+    font-size: 13px;
+    margin: 0;
+    font-weight: 700;
+  }
+}
+
+.waiting-note {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  text-align: center;
+  padding: 12px 0;
+  margin: 0;
+}
+
+.back-link {
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+
+.group {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+.group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+
+  h3 {
+    font-size: 13px;
+    margin: 0;
+    font-weight: 700;
+  }
+}
+.group-hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.option-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--surface);
+  }
+  &.selected {
+    background: color-mix(in srgb, var(--primary) 10%, white);
+    font-weight: 600;
+  }
+}
+.option-price {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-ink);
+}
+
+// ── Recibo imprimible ────────────────────────────────────────
+
+.invoice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(28, 28, 28, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px;
+}
+
+.invoice-sheet {
+  width: 100%;
+  max-width: 340px;
+  max-height: 75vh;
+  overflow-y: auto;
+  background: #fff;
+  color: #1c1c1c;
+  padding: 22px 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 12.5px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invoice-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #999;
+
+  strong {
+    font-size: 14px;
+  }
+}
+
+.invoice-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.invoice-items {
+  padding: 8px 0;
+  border-top: 1px dashed #999;
+  border-bottom: 1px dashed #999;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.invoice-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 600;
+}
+.invoice-item-extra {
+  font-size: 11px;
+  color: #555;
+  padding-left: 8px;
+}
+
+.invoice-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.invoice-total-row {
+  display: flex;
+  justify-content: space-between;
+}
+.invoice-grand-total {
+  font-weight: 800;
+  font-size: 14px;
+  border-top: 1px dashed #999;
+  padding-top: 6px;
+  margin-top: 3px;
+}
+
+.invoice-payment {
+  text-align: center;
+  font-size: 11.5px;
+  color: #555;
+}
+.invoice-footer-note {
+  text-align: center;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+
+.invoice-actions {
+  display: flex;
+  gap: 10px;
+}
+
+// Al imprimir: solo el recibo, sin overlay oscuro, sin botones, sin
+// el resto de la app (sidebar/navbar/panel) — el navegador imprime
+// justo lo que ve el cliente, nada más.
+//
+// @page le pide al navegador/impresora un papel angosto tipo tiquete
+// (80mm, el ancho estándar de una impresora térmica de punto de venta)
+// en vez de la hoja carta completa por defecto. La mayoría de
+// impresoras térmicas y el "Guardar como PDF" del navegador respetan
+// esto automáticamente. Si imprimes en una impresora normal cargada
+// con hoja carta, el navegador puede seguir mostrando ese tamaño de
+// papel en el diálogo — eso ya no lo decide el sitio web, lo decide
+// el navegador — pero el contenido igual va a verse angosto y
+// compacto como un tiquete, no estirado en toda la hoja.
+@page {
+  size: 80mm auto;
+  margin: 4mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 80mm;
+    margin: 0;
+    padding: 0;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .invoice-sheet,
+  .invoice-sheet * {
+    visibility: visible;
+  }
+  .invoice-overlay {
+    background: none; // ya no debe oscurecer la hoja al imprimir
+    position: static;
+  }
+  .invoice-sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80mm;
+    max-width: 80mm;
+    max-height: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 4mm;
+    font-size: 11px;
+  }
+  .invoice-actions {
+    display: none !important;
+  }
+}
+
+.serve-hint {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.picker-tab-combo {
+  background: color-mix(in srgb, var(--primary) 14%, white);
+}
+
+.combo-hint {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+.combo-normal-price {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+
+.combo-progress {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+.combo-progress.combo-complete {
+  background: color-mix(in srgb, #2e8b57 16%, white);
+  color: #1f6b41;
+}
+
+.combo-option-row {
+  cursor: default;
+
+  &:hover {
+    background: none;
+  }
+}

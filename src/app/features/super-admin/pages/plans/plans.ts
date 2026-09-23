@@ -1,33 +1,35 @@
 import { Component, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SuperAdminService } from '../../services/super-admin.service';
-import { PlanInfo } from '../../../plan/models/plan.models';
+import { PlanService } from '../../../../core/services/super-admin.service';
+import { Plan } from '../../../../core/models/company.model';
 import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
 
+// Refleja el Plan real (maxTables/maxUsers/maxProducts/maxBranches +
+// storageQuotaMb) — el modelo viejo tenía maxCategories (nunca existió)
+// y maxPhotos/maxVideos (superados por storageQuotaMb desde que armamos
+// el cupo por MB).
 interface PlanFormValue {
   code: string;
   name: string;
   priceMonthly: number;
-  maxCategories: number | null;
   maxProducts: number | null;
   maxTables: number | null;
   maxUsers: number | null;
-  maxPhotos: number | null;
-  maxVideos: number | null;
+  maxBranches: number | null;
+  storageQuotaMb: number;
 }
 
 const EMPTY_FORM: PlanFormValue = {
   code: '',
   name: '',
   priceMonthly: 0,
-  maxCategories: null,
   maxProducts: null,
   maxTables: null,
   maxUsers: null,
-  maxPhotos: null,
-  maxVideos: null,
+  maxBranches: null,
+  storageQuotaMb: 200,
 };
 
 @Component({
@@ -38,10 +40,10 @@ const EMPTY_FORM: PlanFormValue = {
   styleUrl: './plans.scss',
 })
 export class Plans {
-  private service = inject(SuperAdminService);
+  private service = inject(PlanService);
 
   loading = signal(true);
-  plans = signal<PlanInfo[]>([]);
+  plans = signal<Plan[]>([]);
 
   formOpen = signal(false);
   editingId = signal<string | null>(null);
@@ -55,7 +57,7 @@ export class Plans {
 
   reload(): void {
     this.loading.set(true);
-    this.service.listPlans().subscribe({
+    this.service.list().subscribe({
       next: (plans) => {
         this.plans.set(plans);
         this.loading.set(false);
@@ -71,18 +73,17 @@ export class Plans {
     this.formOpen.set(true);
   }
 
-  openEdit(plan: PlanInfo): void {
+  openEdit(plan: Plan): void {
     this.editingId.set(plan.id);
     this.form.set({
       code: plan.code,
       name: plan.name,
       priceMonthly: Number(plan.priceMonthly),
-      maxCategories: plan.maxCategories,
       maxProducts: plan.maxProducts,
       maxTables: plan.maxTables,
       maxUsers: plan.maxUsers,
-      maxPhotos: plan.maxPhotos,
-      maxVideos: plan.maxVideos,
+      maxBranches: plan.maxBranches,
+      storageQuotaMb: plan.storageQuotaMb,
     });
     this.errorMessage.set(null);
     this.formOpen.set(true);
@@ -97,51 +98,43 @@ export class Plans {
   }
 
   save(): void {
-  const f = this.form();
+    const f = this.form();
 
-  if (!f.name.trim() || (!this.editingId() && !f.code.trim())) {
-    this.errorMessage.set('El código y el nombre son obligatorios.');
-    return;
+    if (!f.name.trim() || (!this.editingId() && !f.code.trim())) {
+      this.errorMessage.set('El código y el nombre son obligatorios.');
+      return;
+    }
+
+    this.saving.set(true);
+    this.errorMessage.set(null);
+
+    const id = this.editingId();
+    const payload: Partial<Plan> = { ...f };
+
+    const request = id ? this.service.update(id, payload) : this.service.create(payload);
+
+    request.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.formOpen.set(false);
+        this.reload();
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.errorMessage.set(err?.error?.error || 'No se pudo guardar el plan.');
+      },
+    });
   }
 
-  this.saving.set(true);
-  this.errorMessage.set(null);
-
-  const id = this.editingId();
-
-  const payload = {
-    ...f,
-    priceMonthly: String(f.priceMonthly),
-  };
-
-  const request = id
-    ? this.service.updatePlan(id, payload)
-    : this.service.createPlan(payload);
-
-  request.subscribe({
-    next: () => {
-      this.saving.set(false);
-      this.formOpen.set(false);
-      this.reload();
-    },
-    error: (err) => {
-      this.saving.set(false);
-      this.errorMessage.set(
-        err?.error?.error || 'No se pudo guardar el plan.'
-      );
-    },
-  });
-}
-
-  toggleActive(plan: PlanInfo & { isActive?: boolean }): void {
+  toggleActive(plan: Plan): void {
     const next = !plan.isActive;
     const verb = next ? 'activar' : 'desactivar';
     if (!confirm(`¿${verb.charAt(0).toUpperCase() + verb.slice(1)} el plan "${plan.name}"?`)) return;
 
-    this.service.updatePlan(plan.id, { isActive: next }).subscribe({ next: () => this.reload() });
+    this.service.update(plan.id, { isActive: next }).subscribe({ next: () => this.reload() });
   }
 
-  rowActions(plan: PlanInfo & { isActive?: boolean }): RowAction[] {
+  rowActions(plan: Plan): RowAction[] {
     return [
       { label: 'Editar', icon: '✏️', handler: () => this.openEdit(plan) },
       {

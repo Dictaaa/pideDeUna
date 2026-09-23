@@ -2,7 +2,7 @@
   <div class="page-head">
     <div>
       <h1>Configuración</h1>
-      <p>Cómo se comporta tu menú de cara al cliente, y los colores de tu marca.</p>
+      <p>Marca, facturación e impuesto/propina por defecto de tu compañía.</p>
     </div>
   </div>
 
@@ -20,30 +20,20 @@
     </div>
     <app-skeleton width="130px" height="34px" radius="8px"></app-skeleton>
   </div>
-  <div class="section">
-    <app-skeleton width="150px" height="13px"></app-skeleton>
-    <div class="skeleton-gap"></div>
-    @for (i of [1, 2, 3, 4, 5]; track i) {
-    <div class="skeleton-toggle-row">
-      <app-skeleton width="18px" height="18px" radius="4px"></app-skeleton>
-      <app-skeleton width="60%" height="12px"></app-skeleton>
-    </div>
-    }
-  </div>
   } @else {
   <section class="section">
     <h2>Marca</h2>
-    <p class="section-sub">El logo, el color y la tipografía con la que se ve tu menú.</p>
+    <p class="section-sub">El logo, el color y la tipografía con la que se ve tu menú — compartidos por todas tus sucursales.</p>
 
     @if (logoError(); as lErr) {
     <div class="form-error" style="margin-bottom: 14px;">{{ lErr }}</div>
     }
 
     <div class="logo-row">
-      @if (restaurant()?.logoUrl) {
-      <img class="logo-current" [src]="restaurant()!.logoUrl" alt="" />
+      @if (company()?.logoUrl) {
+      <img class="logo-current" [src]="company()!.logoUrl" alt="" />
       } @else {
-      <div class="logo-current logo-current-empty">{{ restaurant()?.name?.charAt(0) || 'P' }}</div>
+      <div class="logo-current logo-current-empty">{{ company()?.name?.charAt(0) || 'P' }}</div>
       }
       <label class="btn-secondary logo-upload-btn">
         {{ uploadingLogo() ? 'Subiendo…' : 'Cambiar logo' }}
@@ -87,7 +77,7 @@
   <section class="section">
     <h2>Facturación</h2>
     <p class="section-sub">
-      Lo que se imprime en el recibo. Esto es un comprobante de pago, no una factura electrónica DIAN.
+      Valores por defecto para todas tus sucursales — cada una puede pisarlos con los suyos propios si hace falta.
     </p>
 
     <label class="field">
@@ -116,37 +106,21 @@
       </label>
     </div>
 
+    <label class="field field-checkbox">
+      <input type="checkbox" [ngModel]="s.allowTips" (ngModelChange)="setSettingField('allowTips', $event)" name="allowTips" />
+      <span>Permitir propina por defecto</span>
+    </label>
+
     <label class="field">
-      <span>Propina sugerida (%) — solo se ofrece si "Permitir propina" está activo abajo</span>
+      <span>Propina sugerida (%) — solo se ofrece si "Permitir propina" está activo</span>
       <input type="number" min="0" max="100" step="0.5" [ngModel]="s.tipRate"
         (ngModelChange)="setSettingField('tipRate', $event)" name="tipRate" />
     </label>
 
-    <button type="button" class="btn-secondary" [disabled]="savingSettings()" (click)="saveSettings()">
+    <button type="button" class="btn-primary" [disabled]="savingSettings()" (click)="saveSettings()">
       {{ savingSettings() ? 'Guardando…' : settingsSaved() ? '¡Guardado!' : 'Guardar impuesto y propina' }}
     </button>
     }
   </section>
-
-  @if (settings(); as s) {
-  <section class="section">
-    <h2>Configuración operativa</h2>
-    <p class="section-sub">Qué puede hacer un cliente desde el QR de la mesa.</p>
-
-    <div class="toggle-list">
-      @for (t of toggles; track t.key) {
-      <label class="toggle-row">
-        <input type="checkbox" [checked]="toggleValue(t.key)"
-          (change)="setToggle(t.key, $any($event.target).checked)" />
-        <span>{{ t.label }}</span>
-      </label>
-      }
-    </div>
-
-    <button type="button" class="btn-primary" [disabled]="savingSettings()" (click)="saveSettings()">
-      {{ savingSettings() ? 'Guardando…' : settingsSaved() ? '¡Guardado!' : 'Guardar configuración' }}
-    </button>
-  </section>
-  }
   }
 </div>

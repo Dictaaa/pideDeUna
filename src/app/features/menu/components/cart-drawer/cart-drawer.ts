@@ -1,7 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Component, input, output } from '@angular/core';
-import { CartCombo, CartLine } from '../../../../core/models/menu';
+import { CartCombo, CartLine } from '../../services/cart';
 
 @Component({
   selector: 'app-cart-drawer',

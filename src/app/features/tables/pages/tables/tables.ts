@@ -2,14 +2,28 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import QRCode from 'qrcode';
-import { TableAdmin } from '../../services/table-admin';
-import { AdminArea, AdminTable, TABLE_STATUSES, TableFormValue } from '../../models/table.models';
+import { AreaService, TableService, TableSessionService } from '../../../../core/services/table.service';
+import { RestaurantArea } from '../../../../core/models/restaurant.model';
+import { RestaurantTable } from '../../../../core/models/table.model';
+import { TableStatus } from '../../../../core/models/common.model';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
 import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
 
+interface TableFormValue {
+  tableNumber: string;
+  name: string;
+  areaId: string;
+  capacity: number;
+  status: TableStatus;
+}
+
 const EMPTY_FORM: TableFormValue = { tableNumber: '', name: '', areaId: '', capacity: 4, status: 'AVAILABLE' };
 
-const STATUS_LABELS: Record<string, string> = {
+const TABLE_STATUSES: TableStatus[] = [
+  'AVAILABLE', 'OCCUPIED', 'WAITING_ORDER', 'ORDERING', 'WAITING_PAYMENT', 'CLEANING', 'DISABLED',
+];
+
+const STATUS_LABELS: Record<TableStatus, string> = {
   AVAILABLE: 'Disponible',
   OCCUPIED: 'Ocupada',
   WAITING_ORDER: 'Esperando pedido',
@@ -20,7 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 // Un color por estado — para reconocer de un vistazo en qué anda cada mesa.
-const STATUS_BADGE_CLASS: Record<string, string> = {
+const STATUS_BADGE_CLASS: Record<TableStatus, string> = {
   AVAILABLE: 'badge-success',
   OCCUPIED: 'badge-danger',
   WAITING_ORDER: 'badge-warning',
@@ -39,17 +53,23 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
 })
 export class Tables {
   private route = inject(ActivatedRoute);
-  private tableService = inject(TableAdmin);
+  private tableService = inject(TableService);
+  private areaService = inject(AreaService);
+  private tableSessionService = inject(TableSessionService);
 
   togglingSessionId = signal<string | null>(null);
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+
+  // Mesas es de nivel SUCURSAL.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
+  branchSlug = this.route.snapshot.paramMap.get('branchSlug')!;
+
   statuses = TABLE_STATUSES;
-  statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
-  badgeClass = (s: string) => STATUS_BADGE_CLASS[s] ?? 'badge-neutral';
+  statusLabel = (s: TableStatus) => STATUS_LABELS[s] ?? s;
+  badgeClass = (s: TableStatus) => STATUS_BADGE_CLASS[s] ?? 'badge-neutral';
 
   loading = signal(true);
-  tables = signal<AdminTable[]>([]);
-  areas = signal<AdminArea[]>([]);
+  tables = signal<RestaurantTable[]>([]);
+  areas = signal<RestaurantArea[]>([]);
 
   formOpen = signal(false);
   editingId = signal<string | null>(null);
@@ -57,7 +77,7 @@ export class Tables {
   saving = signal(false);
   errorMessage = signal<string | null>(null);
 
-  qrPreviewTable = signal<AdminTable | null>(null);
+  qrPreviewTable = signal<RestaurantTable | null>(null);
   qrPreviewImage = signal<string | null>(null);
   qrGenerating = signal(false);
 
@@ -65,12 +85,12 @@ export class Tables {
 
   constructor() {
     this.reload();
-    this.tableService.listAreas(this.slug).subscribe({ next: (areas) => this.areas.set(areas) });
+    this.areaService.list(this.companySlug, this.branchSlug).subscribe({ next: (areas) => this.areas.set(areas) });
   }
 
   reload(): void {
     this.loading.set(true);
-    this.tableService.list(this.slug).subscribe({
+    this.tableService.list(this.companySlug, this.branchSlug).subscribe({
       next: (tables) => {
         this.tables.set(tables);
         this.loading.set(false);
@@ -79,16 +99,25 @@ export class Tables {
     });
   }
 
-  activeToken(table: AdminTable): string | null {
-    return table.qrCodes.find((q) => q.isActive)?.token ?? null;
+  /** No hay un boolean "hasOpenSession" del backend — lo derivamos de sessions[]. */
+  hasOpenSession(table: RestaurantTable): boolean {
+    return (table.sessions?.length ?? 0) > 0;
   }
 
-  qrUrl(table: AdminTable): string {
+  private openSessionId(table: RestaurantTable): string | null {
+    return table.sessions?.[0]?.id ?? null;
+  }
+
+  activeToken(table: RestaurantTable): string | null {
+    return table.qrCodes?.find((q) => q.isActive)?.token ?? null;
+  }
+
+  qrUrl(table: RestaurantTable): string {
     const token = this.activeToken(table);
-    return token ? `${location.origin}/${this.slug}/mesa/${token}` : '';
+    return token ? `${location.origin}/${this.companySlug}/${this.branchSlug}/mesa/${token}` : '';
   }
 
-  copyQrLink(table: AdminTable): void {
+  copyQrLink(table: RestaurantTable): void {
     const url = this.qrUrl(table);
     if (!url) return;
     navigator.clipboard.writeText(url).then(() => this.showToast('Link copiado'));
@@ -99,12 +128,12 @@ export class Tables {
     setTimeout(() => this.toastMessage.set(null), 1800);
   }
 
-  regenerateQr(table: AdminTable): void {
+  regenerateQr(table: RestaurantTable): void {
     if (!confirm(`¿Regenerar el QR de la mesa ${table.tableNumber}? El código impreso anterior dejará de servir.`)) return;
-    this.tableService.regenerateQr(this.slug, table.id).subscribe({ next: () => this.reload() });
+    this.tableService.regenerateQr(this.companySlug, this.branchSlug, table.id).subscribe({ next: () => this.reload() });
   }
 
-  openQrPreview(table: AdminTable): void {
+  openQrPreview(table: RestaurantTable): void {
     const url = this.qrUrl(table);
     if (!url) return;
 
@@ -123,7 +152,7 @@ export class Tables {
     this.qrPreviewImage.set(null);
   }
 
-  downloadQr(table: AdminTable): void {
+  downloadQr(table: RestaurantTable): void {
     const image = this.qrPreviewImage();
     if (!image) return;
 
@@ -140,7 +169,7 @@ export class Tables {
     this.formOpen.set(true);
   }
 
-  openEdit(table: AdminTable): void {
+  openEdit(table: RestaurantTable): void {
     this.editingId.set(table.id);
     this.form.set({
       tableNumber: table.tableNumber,
@@ -170,36 +199,42 @@ export class Tables {
     this.errorMessage.set(null);
 
     const id = this.editingId();
-    const request = id ? this.tableService.update(this.slug, id, this.form()) : this.tableService.create(this.slug, this.form());
+    const onError = (err: { error?: { error?: string } }) => {
+      this.saving.set(false);
+      this.errorMessage.set(err?.error?.error || 'No se pudo guardar la mesa.');
+    };
+    const onSuccess = () => {
+      this.saving.set(false);
+      this.formOpen.set(false);
+      this.reload();
+    };
 
-    request.subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.formOpen.set(false);
-        this.reload();
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.errorMessage.set(err?.error?.error || 'No se pudo guardar la mesa.');
-      },
-    });
+    if (id) {
+      this.tableService.update(this.companySlug, this.branchSlug, id, this.form()).subscribe({ next: onSuccess, error: onError });
+    } else {
+      // create() devuelve { table, qr } (distinto de update(), que
+      // devuelve la mesa sola) — no comparten tipo, así que van en
+      // ramas separadas en vez de una sola variable "request".
+      this.tableService.create(this.companySlug, this.branchSlug, this.form()).subscribe({ next: onSuccess, error: onError });
+    }
   }
 
-  remove(table: AdminTable): void {
+  remove(table: RestaurantTable): void {
     if (!confirm(`¿Eliminar la mesa ${table.tableNumber}?`)) return;
-    this.tableService.remove(this.slug, table.id).subscribe({ next: () => this.reload() });
+    this.tableService.remove(this.companySlug, this.branchSlug, table.id).subscribe({ next: () => this.reload() });
   }
 
-  rowActions(table: AdminTable): RowAction[] {
+  rowActions(table: RestaurantTable): RowAction[] {
     const actions: RowAction[] = [];
 
     if (this.activeToken(table)) {
+      const isOpen = this.hasOpenSession(table);
       actions.push(
-      {
-        label: table.hasOpenSession ? '🔴 Cerrar mesa (dejar de recibir pedidos)' : '🟢 Abrir mesa (permitir pedir)',
-        icon: table.hasOpenSession ? '🔴' : '🟢',
-        handler: () => this.toggleSession(table),
-      },
+        {
+          label: isOpen ? '🔴 Cerrar mesa (dejar de recibir pedidos)' : '🟢 Abrir mesa (permitir pedir)',
+          icon: isOpen ? '🔴' : '🟢',
+          handler: () => this.toggleSession(table),
+        },
         { label: 'Ver QR', icon: '📱', handler: () => this.openQrPreview(table) },
         { label: 'Copiar link', icon: '🔗', handler: () => this.copyQrLink(table) },
         { label: 'Regenerar QR', icon: '🔄', handler: () => this.regenerateQr(table) }
@@ -214,33 +249,33 @@ export class Tables {
     return actions;
   }
 
- toggleSession(table: AdminTable): void {
-  this.togglingSessionId.set(table.id);
+  toggleSession(table: RestaurantTable): void {
+    this.togglingSessionId.set(table.id);
 
-  if (table.hasOpenSession) {
-    this.tableService.closeSession(this.slug, table.id).subscribe({
+    if (this.hasOpenSession(table)) {
+      const sessionId = this.openSessionId(table);
+      if (!sessionId) {
+        this.togglingSessionId.set(null);
+        return;
+      }
+      this.tableSessionService.close(this.companySlug, this.branchSlug, sessionId).subscribe({
+        next: () => {
+          this.togglingSessionId.set(null);
+          this.showToast('Mesa cerrada — ya no se puede pedir');
+          this.reload();
+        },
+        error: () => this.togglingSessionId.set(null),
+      });
+      return;
+    }
+
+    this.tableService.openSession(this.companySlug, this.branchSlug, table.id).subscribe({
       next: () => {
         this.togglingSessionId.set(null);
-        this.showToast('Mesa cerrada — ya no se puede pedir');
+        this.showToast('Mesa abierta — ya se puede pedir');
         this.reload();
       },
-      error: () => {
-        this.togglingSessionId.set(null);
-      },
+      error: () => this.togglingSessionId.set(null),
     });
-
-    return;
   }
-
-  this.tableService.openSession(this.slug, table.id).subscribe({
-    next: () => {
-      this.togglingSessionId.set(null);
-      this.showToast('Mesa abierta — ya se puede pedir');
-      this.reload();
-    },
-    error: () => {
-      this.togglingSessionId.set(null);
-    },
-  });
-}
 }

@@ -11,8 +11,38 @@
     <span class="brand-name">{{ restaurantName() || 'PidaDeUna' }}</span>
   </div>
 
-  <div class="navbar-user">
-    <span class="user-name">{{ userName() }}</span>
-    <button type="button" class="logout-btn" (click)="logout.emit()">Cerrar sesión</button>
+  <div class="navbar-right">
+    @if (showBranchSwitcher() && branches().length > 0) {
+      <div class="branch-switcher">
+        <span class="branch-switcher-icon">🏬</span>
+        <select [ngModel]="branchSlug()" (ngModelChange)="onBranchChange($event)" name="branchSwitcher">
+          @for (r of branches(); track r.id) {
+            <option [value]="r.slug">{{ r.name }}</option>
+          }
+        </select>
+      </div>
+    }
+
+    <div class="user-menu">
+      <button type="button" class="user-menu-trigger" (click)="toggleUserMenu()">
+        <span class="user-avatar">👤</span>
+        <span class="user-name">{{ userName() }}</span>
+      </button>
+
+      @if (userMenuOpen()) {
+        <div class="user-menu-backdrop" (click)="closeUserMenu()"></div>
+        <div class="user-menu-dropdown">
+          <div class="user-menu-header">
+            <span class="user-avatar user-avatar-lg">👤</span>
+            <div>
+              <div class="user-menu-name">{{ userName() }}</div>
+              <div class="user-menu-email">{{ userEmail() }}</div>
+              <div class="user-menu-role">{{ userRoleLabel() }}</div>
+            </div>
+          </div>
+          <button type="button" class="user-menu-logout" (click)="logout()">Cerrar sesión</button>
+        </div>
+      }
+    </div>
   </div>
 </header>

@@ -30,18 +30,18 @@
 } @else if (loadError()) {
   <div class="state-message error">{{ loadError() }}</div>
 } @else {
-  @if (restaurant(); as r) {
+  @if (company(); as c) {
     <header class="top">
       <div class="top-inner">
         <div class="brand">
-          @if (r.logoUrl) {
-            <img class="brand-logo" [src]="r.logoUrl" alt="" />
+          @if (c.logoUrl) {
+            <img class="brand-logo" [src]="c.logoUrl" alt="" />
           } @else {
-            <div class="brand-mark">{{ r.name.charAt(0) }}</div>
+            <div class="brand-mark">{{ c.name.charAt(0) }}</div>
           }
           <div class="brand-text">
-            <h1>{{ r.name }}</h1>
-            <p>Menú digital · PideDeUna</p>
+            <h1>{{ c.name ?? branch()?.name }}</h1>
+            <p>{{ branch()?.name }}</p>
           </div>
         </div>
         @if (mesaToken) {
@@ -85,7 +85,7 @@
                 }
                 <div class="promo-foot">
                   <span class="promo-qty">Lleva {{ promo.buyQuantity }}</span>
-                  <span class="promo-price">{{ '$' + (+(promo.fixedAmount ?? 0) | number: '1.0-0') }}</span>
+                  <span class="promo-price">{{ '$' + (+(promo.effectiveFixedAmount ?? promo.fixedAmount ?? 0) | number: '1.0-0') }}</span>
                 </div>
               </button>
             }
@@ -97,10 +97,10 @@
         <section class="category-section" [id]="'cat-' + cat.id">
           <div class="category-title">
             <h2>{{ cat.name }}</h2>
-            <span class="count">{{ cat.products.length }} platos</span>
+            <span class="count">{{ (productsByCategory().get(cat.id) ?? []).length }} platos</span>
           </div>
 
-          @for (product of cat.products; track product.id) {
+          @for (product of productsByCategory().get(cat.id) ?? []; track product.id) {
             <app-product-card
               [product]="product"
               (open)="openProductSheet($event)"

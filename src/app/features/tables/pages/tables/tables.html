@@ -30,7 +30,7 @@
         <td>{{ t.capacity }}</td>
         <td>
           <span class="badge" [class]="badgeClass(t.status)">{{ statusLabel(t.status) }}</span>
-          @if (t.hasOpenSession) {
+          @if (hasOpenSession(t)) {
             <span class="badge badge-success" title="El cliente puede pedir ahora mismo">🟢 Abierta</span>
           }
         </td>

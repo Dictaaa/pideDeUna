@@ -1,11 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { SettingsAdmin } from '../../services/settings-admin';
-import { RestaurantSettings, SETTINGS_TOGGLES } from '../../models/settings.models';
-import { Restaurant } from '../../../../core/models/menu';
+import { CompanyService } from '../../../../core/services/company.service';
+import { Company, CompanySettings } from '../../../../core/models/company.model';
 import { Skeleton } from '../../../../shared/components/skeleton/skeleton';
-import { RestaurantProfile } from '../../../dashboard/services/restaurant-profile';
 import { applyMenuFont, MENU_FONT_OPTIONS } from '../../../../shared/utils/menu-fonts';
 
 @Component({
@@ -17,16 +15,18 @@ import { applyMenuFont, MENU_FONT_OPTIONS } from '../../../../shared/utils/menu-
 })
 export class Settings {
   private route = inject(ActivatedRoute);
-  private settingsService = inject(SettingsAdmin);
-  private restaurantProfile = inject(RestaurantProfile);
+  private companyService = inject(CompanyService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
-  toggles = SETTINGS_TOGGLES;
+  // Configuración es de nivel COMPAÑÍA — no necesita branchSlug. Los
+  // toggles operativos (aceptar pedidos, llamar mesero, etc.) viven en
+  // branch_settings, no acá — necesitan su propia pantalla a nivel
+  // sucursal, que no está construida todavía.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
   fontOptions = MENU_FONT_OPTIONS;
 
   loading = signal(true);
-  settings = signal<RestaurantSettings | null>(null);
-  restaurant = signal<Restaurant | null>(null);
+  settings = signal<CompanySettings | null>(null);
+  company = signal<Company | null>(null);
 
   savingSettings = signal(false);
   savingBranding = signal(false);
@@ -38,8 +38,6 @@ export class Settings {
   secondaryColor = signal('#FFC02E');
   fontFamily = signal('inter');
 
-  // Datos de facturación — el NIT vive en el perfil; el impuesto y la
-  // propina viven en RestaurantSettings junto a los demás toggles.
   nit = signal('');
   savingNit = signal(false);
   nitSaved = signal(false);
@@ -48,7 +46,7 @@ export class Settings {
   logoError = signal<string | null>(null);
 
   constructor() {
-    this.settingsService.getSettings(this.slug).subscribe({
+    this.companyService.getSettings(this.companySlug).subscribe({
       next: (s) => {
         this.settings.set(s);
         this.loading.set(false);
@@ -56,29 +54,19 @@ export class Settings {
       error: () => this.loading.set(false),
     });
 
-    this.settingsService.getProfile(this.slug).subscribe({
-      next: (r) => {
-        this.restaurant.set(r);
-        this.primaryColor.set(r.primaryColor);
-        this.secondaryColor.set(r.secondaryColor);
-        this.fontFamily.set(r.fontFamily);
-        this.nit.set(r.nit ?? '');
+    this.companyService.getDetail(this.companySlug).subscribe({
+      next: (c) => {
+        this.company.set(c);
+        this.primaryColor.set(c.primaryColor);
+        this.secondaryColor.set(c.secondaryColor);
+        this.fontFamily.set(c.fontFamily);
+        this.nit.set(c.nit ?? '');
       },
     });
   }
 
-  toggleValue(key: keyof Omit<RestaurantSettings, 'restaurantId'>): boolean {
-    return !!this.settings()?.[key];
-  }
-
-  setToggle(key: keyof Omit<RestaurantSettings, 'restaurantId'>, value: boolean): void {
-    const current = this.settings();
-    if (!current) return;
-    this.settings.set({ ...current, [key]: value });
-  }
-
-  /** Para los campos numéricos/texto de facturación (taxLabel, taxRate, tipRate) — no son on/off como los toggles. */
-  setSettingField<K extends keyof RestaurantSettings>(key: K, value: RestaurantSettings[K]): void {
+  /** Para los campos de facturación (taxLabel, taxRate, tipRate, allowTips). */
+  setSettingField<K extends keyof CompanySettings>(key: K, value: CompanySettings[K]): void {
     const current = this.settings();
     if (!current) return;
     this.settings.set({ ...current, [key]: value });
@@ -88,9 +76,9 @@ export class Settings {
     this.savingNit.set(true);
     this.errorMessage.set(null);
 
-    this.settingsService.updateNit(this.slug, this.nit().trim()).subscribe({
-      next: (r) => {
-        this.restaurant.set(r);
+    this.companyService.update(this.companySlug, { nit: this.nit().trim() }).subscribe({
+      next: (c) => {
+        this.company.set(c);
         this.savingNit.set(false);
         this.nitSaved.set(true);
         setTimeout(() => this.nitSaved.set(false), 1800);
@@ -108,18 +96,24 @@ export class Settings {
     this.savingSettings.set(true);
     this.errorMessage.set(null);
 
-    const { restaurantId, ...editable } = s;
-    this.settingsService.updateSettings(this.slug, editable).subscribe({
-      next: () => {
-        this.savingSettings.set(false);
-        this.settingsSaved.set(true);
-        setTimeout(() => this.settingsSaved.set(false), 1800);
-      },
-      error: (err) => {
-        this.savingSettings.set(false);
-        this.errorMessage.set(err?.error?.error || 'No se pudo guardar la configuración.');
-      },
-    });
+    this.companyService
+      .updateSettings(this.companySlug, {
+        taxLabel: s.taxLabel,
+        taxRate: s.taxRate,
+        tipRate: s.tipRate,
+        allowTips: s.allowTips,
+      })
+      .subscribe({
+        next: () => {
+          this.savingSettings.set(false);
+          this.settingsSaved.set(true);
+          setTimeout(() => this.settingsSaved.set(false), 1800);
+        },
+        error: (err) => {
+          this.savingSettings.set(false);
+          this.errorMessage.set(err?.error?.error || 'No se pudo guardar la configuración.');
+        },
+      });
   }
 
   onFontChange(fontId: string): void {
@@ -135,20 +129,20 @@ export class Settings {
     this.savingBranding.set(true);
     this.errorMessage.set(null);
 
-    this.settingsService
-      .updateBranding(this.slug, {
+    this.companyService
+      .update(this.companySlug, {
         primaryColor: this.primaryColor(),
         secondaryColor: this.secondaryColor(),
-        fontFamily: this.fontFamily(),
+        fontFamily: this.fontFamily() as Company['fontFamily'],
       })
       .subscribe({
-        next: (r) => {
-          this.restaurant.set(r);
+        next: (c) => {
+          this.company.set(c);
           this.savingBranding.set(false);
           this.brandingSaved.set(true);
           // Aplica el cambio de una vez en el panel, igual que en el Shell.
-          document.documentElement.style.setProperty('--primary', r.primaryColor);
-          document.documentElement.style.setProperty('--secondary', r.secondaryColor);
+          document.documentElement.style.setProperty('--primary', c.primaryColor);
+          document.documentElement.style.setProperty('--secondary', c.secondaryColor);
           setTimeout(() => this.brandingSaved.set(false), 1800);
         },
         error: (err) => {
@@ -166,9 +160,12 @@ export class Settings {
     this.uploadingLogo.set(true);
     this.logoError.set(null);
 
-    this.restaurantProfile.uploadLogo(this.slug, file).subscribe({
-      next: (r) => {
-        this.restaurant.set(r);
+    this.companyService.uploadLogo(this.companySlug, file).subscribe({
+      next: (res) => {
+        // uploadLogo() solo devuelve { logoUrl }, no la compañía completa
+        // — se actualiza el campo en el signal en vez de reemplazarlo todo.
+        const current = this.company();
+        if (current) this.company.set({ ...current, logoUrl: res.logoUrl });
         this.uploadingLogo.set(false);
         input.value = '';
       },

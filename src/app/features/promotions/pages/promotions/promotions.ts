@@ -2,13 +2,20 @@ import { Component, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { forkJoin } from 'rxjs';
-import { PromotionAdmin } from '../../services/promotion-admin';
-import { AdminPromotion, PromotionFormValue } from '../../models/promotion.models';
-import { ProductAdmin } from '../../../products/services/product-admin';
-import { AdminProduct } from '../../../products/models/product.models';
+import { PromotionService } from '../../../../core/services/promotion.service';
+import { ProductService } from '../../../../core/services/menu.service';
+import { Promotion } from '../../../../core/models/promotion.model';
+import { Product } from '../../../../core/models/menu.model';
 import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
+
+interface PromotionFormValue {
+  name: string;
+  description: string;
+  buyQuantity: number;
+  fixedAmount: number;
+  isActive: boolean;
+}
 
 const EMPTY_FORM: PromotionFormValue = {
   name: '',
@@ -27,14 +34,15 @@ const EMPTY_FORM: PromotionFormValue = {
 })
 export class Promotions {
   private route = inject(ActivatedRoute);
-  private service = inject(PromotionAdmin);
-  private productService = inject(ProductAdmin);
+  private promotionService = inject(PromotionService);
+  private productService = inject(ProductService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+  // Promociones es de nivel COMPAÑÍA — no necesita branchSlug.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
 
   loading = signal(true);
-  promotions = signal<AdminPromotion[]>([]);
-  allProducts = signal<AdminProduct[]>([]);
+  promotions = signal<Promotion[]>([]);
+  allProducts = signal<Product[]>([]);
 
   formOpen = signal(false);
   editingId = signal<string | null>(null);
@@ -50,12 +58,12 @@ export class Promotions {
 
   constructor() {
     this.reload();
-    this.productService.list(this.slug).subscribe({ next: (products) => this.allProducts.set(products) });
+    this.productService.list(this.companySlug).subscribe({ next: (products) => this.allProducts.set(products) });
   }
 
   reload(): void {
     this.loading.set(true);
-    this.service.list(this.slug).subscribe({
+    this.promotionService.list(this.companySlug).subscribe({
       next: (promos) => {
         this.promotions.set(promos);
         this.loading.set(false);
@@ -64,8 +72,8 @@ export class Promotions {
     });
   }
 
-  productNames(promo: AdminPromotion): string {
-    return promo.products.map((p) => p.name).join(', ') || '—';
+  productNames(promo: Promotion): string {
+    return (promo.products ?? []).map((p) => p.name).join(', ') || '—';
   }
 
   openCreate(): void {
@@ -78,7 +86,7 @@ export class Promotions {
     this.formOpen.set(true);
   }
 
-  openEdit(promo: AdminPromotion): void {
+  openEdit(promo: Promotion): void {
     this.editingId.set(promo.id);
     this.form.set({
       name: promo.name,
@@ -87,7 +95,7 @@ export class Promotions {
       fixedAmount: promo.fixedAmount ? Number(promo.fixedAmount) : 0,
       isActive: promo.isActive,
     });
-    this.selectedProductIds.set(new Set(promo.products.map((p) => p.id)));
+    this.selectedProductIds.set(new Set((promo.products ?? []).map((p) => p.id)));
     this.editingImageUrl.set(promo.imageUrl);
     this.imageError.set(null);
     this.errorMessage.set(null);
@@ -141,10 +149,9 @@ export class Promotions {
     const productIds = Array.from(this.selectedProductIds());
 
     if (id) {
-      forkJoin({
-        promo: this.service.update(this.slug, id, f),
-        products: this.service.setProducts(this.slug, id, productIds),
-      }).subscribe({
+      // update() ya acepta productIds en el mismo payload — no hace
+      // falta una segunda llamada como en la versión vieja.
+      this.promotionService.update(this.companySlug, id, { ...f, productIds }).subscribe({
         next: () => {
           this.saving.set(false);
           this.formOpen.set(false);
@@ -158,7 +165,9 @@ export class Promotions {
       return;
     }
 
-    this.service.create(this.slug, f, productIds).subscribe({
+    // promoType es obligatorio en el backend — esta pantalla solo crea
+    // combos "lleva N, paga $X", así que siempre es buy_x_get_y.
+    this.promotionService.create(this.companySlug, { ...f, promoType: 'buy_x_get_y', productIds }).subscribe({
       next: () => {
         this.saving.set(false);
         this.formOpen.set(false);
@@ -171,12 +180,12 @@ export class Promotions {
     });
   }
 
-  deactivate(promo: AdminPromotion): void {
+  deactivate(promo: Promotion): void {
     if (!confirm(`¿Desactivar "${promo.name}"? Deja de mostrarse en el menú.`)) return;
-    this.service.deactivate(this.slug, promo.id).subscribe({ next: () => this.reload() });
+    this.promotionService.update(this.companySlug, promo.id, { isActive: false }).subscribe({ next: () => this.reload() });
   }
 
-  rowActions(promo: AdminPromotion): RowAction[] {
+  rowActions(promo: Promotion): RowAction[] {
     const actions: RowAction[] = [{ label: 'Editar', icon: '✏️', handler: () => this.openEdit(promo) }];
     if (promo.isActive) {
       actions.push({ label: 'Desactivar', icon: '⛔', handler: () => this.deactivate(promo), danger: true });
@@ -195,9 +204,9 @@ export class Promotions {
     this.uploadingImage.set(true);
     this.imageError.set(null);
 
-    this.service.uploadImage(this.slug, promotionId, file).subscribe({
-      next: (promo) => {
-        this.editingImageUrl.set(promo.imageUrl);
+    this.promotionService.uploadImage(this.companySlug, promotionId, file).subscribe({
+      next: (res) => {
+        this.editingImageUrl.set(res.imageUrl);
         this.uploadingImage.set(false);
         input.value = '';
       },

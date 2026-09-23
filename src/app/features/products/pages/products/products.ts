@@ -2,14 +2,22 @@ import { Component, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { ProductAdmin } from '../../services/product-admin';
-import { Category } from '../../../categories/services/category';
-import { AdminProduct, AdminProductMedia, ProductFormValue } from '../../models/product.models';
+import { MenuCategoryService, ModifierGroupService, ProductService } from '../../../../core/services/menu.service';
+import { MenuCategory, ModifierGroup, Product, ProductMedia } from '../../../../core/models/menu.model';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
-import { AdminCategory } from '../../../categories/models/category.models';
 import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
-import { ModifierGroupAdmin } from '../../../modifier-groups/services/modifier-group-admin';
-import { AdminModifierGroup } from '../../../modifier-groups/models/modifier-group.models';
+
+interface ProductFormValue {
+  name: string;
+  slug: string;
+  categoryId: string;
+  description: string;
+  price: number;
+  compareAtPrice: number | null;
+  isAvailable: boolean;
+  isFeatured: boolean;
+  isRecommended: boolean;
+}
 
 const EMPTY_FORM: ProductFormValue = {
   name: '',
@@ -43,15 +51,17 @@ function slugify(text: string): string {
 })
 export class Products {
   private route = inject(ActivatedRoute);
-  private productService = inject(ProductAdmin);
-  private categoryService = inject(Category);
-  private modifierGroupService = inject(ModifierGroupAdmin);
+  private productService = inject(ProductService);
+  private categoryService = inject(MenuCategoryService);
+  private modifierGroupService = inject(ModifierGroupService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+  // Productos es de nivel COMPAÑÍA — no necesita branchSlug (los
+  // overrides de precio/disponibilidad por sucursal son otra pantalla).
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
 
   loading = signal(true);
-  products = signal<AdminProduct[]>([]);
-  categories = signal<AdminCategory[]>([]);
+  products = signal<Product[]>([]);
+  categories = signal<MenuCategory[]>([]);
 
   formOpen = signal(false);
   editingId = signal<string | null>(null);
@@ -60,24 +70,24 @@ export class Products {
   saving = signal(false);
   errorMessage = signal<string | null>(null);
 
-  currentMedia = signal<AdminProductMedia[]>([]);
+  currentMedia = signal<ProductMedia[]>([]);
   uploadingMedia = signal(false);
   mediaError = signal<string | null>(null);
 
   // Adicionales asignados al producto que se está editando.
-  allModifierGroups = signal<AdminModifierGroup[]>([]);
+  allModifierGroups = signal<ModifierGroup[]>([]);
   selectedModifierGroupIds = signal<Set<string>>(new Set());
   savingModifierGroups = signal(false);
 
   constructor() {
     this.reload();
-    this.categoryService.list(this.slug).subscribe({ next: (cats) => this.categories.set(cats) });
-    this.modifierGroupService.list(this.slug).subscribe({ next: (groups) => this.allModifierGroups.set(groups) });
+    this.categoryService.list(this.companySlug).subscribe({ next: (cats) => this.categories.set(cats) });
+    this.modifierGroupService.list(this.companySlug).subscribe({ next: (groups) => this.allModifierGroups.set(groups) });
   }
 
   reload(): void {
     this.loading.set(true);
-    this.productService.list(this.slug).subscribe({
+    this.productService.list(this.companySlug).subscribe({
       next: (products) => {
         this.products.set(products);
         this.loading.set(false);
@@ -101,7 +111,7 @@ export class Products {
     this.formOpen.set(true);
   }
 
-  openEdit(product: AdminProduct): void {
+  openEdit(product: Product): void {
     this.editingId.set(product.id);
     this.slugTouched.set(true);
     this.currentMedia.set(product.media ?? []);
@@ -155,10 +165,22 @@ export class Products {
     this.saving.set(true);
     this.errorMessage.set(null);
 
+    const payload: Partial<Product> = {
+      name: f.name,
+      slug: f.slug,
+      categoryId: f.categoryId || null,
+      description: f.description || undefined,
+      price: f.price,
+      compareAtPrice: f.compareAtPrice,
+      isAvailable: f.isAvailable,
+      isFeatured: f.isFeatured,
+      isRecommended: f.isRecommended,
+    };
+
     const id = this.editingId();
 
     if (id) {
-      this.productService.update(this.slug, id, f).subscribe({
+      this.productService.update(this.companySlug, id, payload).subscribe({
         next: () => {
           this.saving.set(false);
           this.formOpen.set(false);
@@ -176,7 +198,7 @@ export class Products {
     // así se puede subir la foto/video de una vez, sin tener que
     // volver a abrir el producto (el endpoint de media necesita el id,
     // que solo existe después de este primer guardado).
-    this.productService.create(this.slug, f).subscribe({
+    this.productService.create(this.companySlug, payload).subscribe({
       next: (created) => {
         this.saving.set(false);
         this.editingId.set(created.id);
@@ -191,16 +213,16 @@ export class Products {
     });
   }
 
-  remove(product: AdminProduct): void {
+  remove(product: Product): void {
     if (!confirm(`¿Eliminar "${product.name}"?`)) return;
-    this.productService.remove(this.slug, product.id).subscribe({ next: () => this.reload() });
+    this.productService.remove(this.companySlug, product.id).subscribe({ next: () => this.reload() });
   }
 
-  badgeClass(product: AdminProduct): string {
+  badgeClass(product: Product): string {
     return 'badge ' + (product.isAvailable ? 'badge-success' : 'badge-neutral');
   }
 
-  rowActions(product: AdminProduct): RowAction[] {
+  rowActions(product: Product): RowAction[] {
     return [
       { label: 'Editar', icon: '✏️', handler: () => this.openEdit(product) },
       { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(product), danger: true },
@@ -218,9 +240,10 @@ export class Products {
 
     this.uploadingMedia.set(true);
     this.mediaError.set(null);
-    const isPrimary = this.currentMedia().length === 0; // el primero que sube queda como principal
 
-    this.productService.uploadMedia(this.slug, productId, file, isPrimary).subscribe({
+    // El backend decide solo si es la principal (la primera que se
+    // sube) — no hace falta mandarle ese dato.
+    this.productService.addMedia(this.companySlug, productId, file).subscribe({
       next: (media) => {
         this.currentMedia.set([...this.currentMedia(), media]);
         this.uploadingMedia.set(false);
@@ -234,12 +257,12 @@ export class Products {
     });
   }
 
-  removeMedia(media: AdminProductMedia): void {
+  removeMedia(media: ProductMedia): void {
     const productId = this.editingId();
     if (!productId) return;
     if (!confirm('¿Eliminar este archivo?')) return;
 
-    this.productService.removeMedia(this.slug, productId, media.id).subscribe({
+    this.productService.removeMedia(this.companySlug, productId, media.id).subscribe({
       next: () => this.currentMedia.set(this.currentMedia().filter((m) => m.id !== media.id)),
     });
   }
@@ -262,15 +285,17 @@ export class Products {
     if (!productId) return;
 
     this.savingModifierGroups.set(true);
-    this.productService.setModifierGroups(this.slug, productId, Array.from(this.selectedModifierGroupIds())).subscribe({
-      next: () => {
-        this.savingModifierGroups.set(false);
-        this.reload();
-      },
-      error: (err) => {
-        this.savingModifierGroups.set(false);
-        this.errorMessage.set(err?.error?.error || 'No se pudieron guardar los adicionales.');
-      },
-    });
+    this.productService
+      .setModifierGroups(this.companySlug, productId, Array.from(this.selectedModifierGroupIds()))
+      .subscribe({
+        next: () => {
+          this.savingModifierGroups.set(false);
+          this.reload();
+        },
+        error: (err) => {
+          this.savingModifierGroups.set(false);
+          this.errorMessage.set(err?.error?.error || 'No se pudieron guardar los adicionales.');
+        },
+      });
   }
 }

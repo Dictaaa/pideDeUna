@@ -1,10 +1,19 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { AreaAdmin } from '../../../area/services/area-admin';
-import { AdminArea, AreaFormValue } from '../../../area/models/area.models';
+import { AreaService } from '../../../../core/services/table.service';
+import { RestaurantArea } from '../../../../core/models/restaurant.model';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
 import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
+
+// El backend guarda isActive (boolean) — el formulario sigue mostrando
+// "Activa"/"Inactiva" como tu versión vieja, se convierte al guardar.
+interface AreaFormValue {
+  name: string;
+  description: string;
+  sortOrder: number;
+  status: 'active' | 'inactive';
+}
 
 const EMPTY_FORM: AreaFormValue = { name: '', description: '', sortOrder: 0, status: 'active' };
 
@@ -17,12 +26,14 @@ const EMPTY_FORM: AreaFormValue = { name: '', description: '', sortOrder: 0, sta
 })
 export class Areas {
   private route = inject(ActivatedRoute);
-  private areaService = inject(AreaAdmin);
+  private areaService = inject(AreaService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+  // Áreas es de nivel SUCURSAL.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
+  branchSlug = this.route.snapshot.paramMap.get('branchSlug')!;
 
   loading = signal(true);
-  areas = signal<AdminArea[]>([]);
+  areas = signal<RestaurantArea[]>([]);
 
   formOpen = signal(false);
   editingId = signal<string | null>(null);
@@ -36,7 +47,7 @@ export class Areas {
 
   reload(): void {
     this.loading.set(true);
-    this.areaService.list(this.slug).subscribe({
+    this.areaService.list(this.companySlug, this.branchSlug).subscribe({
       next: (areas) => {
         this.areas.set(areas);
         this.loading.set(false);
@@ -52,13 +63,13 @@ export class Areas {
     this.formOpen.set(true);
   }
 
-  openEdit(area: AdminArea): void {
+  openEdit(area: RestaurantArea): void {
     this.editingId.set(area.id);
     this.form.set({
       name: area.name,
       description: area.description ?? '',
       sortOrder: area.sortOrder,
-      status: area.status,
+      status: area.isActive ? 'active' : 'inactive',
     });
     this.errorMessage.set(null);
     this.formOpen.set(true);
@@ -73,15 +84,25 @@ export class Areas {
   }
 
   save(): void {
-    if (!this.form().name.trim()) {
+    const f = this.form();
+    if (!f.name.trim()) {
       this.errorMessage.set('El nombre es obligatorio.');
       return;
     }
     this.saving.set(true);
     this.errorMessage.set(null);
 
+    const payload = {
+      name: f.name,
+      description: f.description || undefined,
+      sortOrder: f.sortOrder,
+      isActive: f.status === 'active',
+    };
+
     const id = this.editingId();
-    const request = id ? this.areaService.update(this.slug, id, this.form()) : this.areaService.create(this.slug, this.form());
+    const request = id
+      ? this.areaService.update(this.companySlug, this.branchSlug, id, payload)
+      : this.areaService.create(this.companySlug, this.branchSlug, payload);
 
     request.subscribe({
       next: () => {
@@ -96,16 +117,16 @@ export class Areas {
     });
   }
 
-  remove(area: AdminArea): void {
+  remove(area: RestaurantArea): void {
     if (!confirm(`¿Eliminar "${area.name}"? Las mesas que la tengan asignada se quedan sin área.`)) return;
-    this.areaService.remove(this.slug, area.id).subscribe({ next: () => this.reload() });
+    this.areaService.remove(this.companySlug, this.branchSlug, area.id).subscribe({ next: () => this.reload() });
   }
 
-   badgeClass(area: AdminArea): string {
-    return area.status === 'active' ? 'badge-success' : 'badge-neutral';
+  badgeClass(area: RestaurantArea): string {
+    return area.isActive ? 'badge-success' : 'badge-neutral';
   }
 
-  rowActions(area: AdminArea): RowAction[] {
+  rowActions(area: RestaurantArea): RowAction[] {
     return [
       { label: 'Editar', icon: '✏️', handler: () => this.openEdit(area) },
       { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(area), danger: true },

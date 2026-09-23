@@ -83,3 +83,45 @@ body {
     opacity: 0;
   }
 }
+
+// ── Impresión de la factura (Caja / Historial) — tamaño A5, igual que
+// el PDF que genera el backend. Va acá, en el global, porque usa
+// selectores sobre <body>, que queda FUERA del scoping de cualquier
+// componente — puesto en el .scss de un componente, no hace nada.
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .invoice-sheet,
+  .invoice-sheet * {
+    visibility: visible;
+  }
+  .invoice-overlay {
+    position: absolute;
+    inset: 0;
+    background: none;
+  }
+  .invoice-sheet {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+    margin: 0;
+  }
+  .invoice-actions,
+  app-navbar,
+  app-sidebar,
+  .overlay,
+  .panel {
+    display: none !important;
+  }
+}
+
+@page {
+  size: A5;
+  margin: 10mm;
+}

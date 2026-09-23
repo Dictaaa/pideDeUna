@@ -1,9 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { Auth } from '../../../../core/services/auth';
-import { StatsAdmin, StatsPeriod } from '../../services/stats-admin';
-import { StatsSummary, StatsTimeseriesPoint, StatsTopProduct } from '../../../../core/models/stats.models';
+import { AuthService } from '../../../../core/services/auth.service';
+import { ReportService, StatsPeriod, StatsSummary, StatsTimeseriesPoint, StatsTopProduct } from '../../../../core/services/report.service';
 import { Skeleton } from '../../../../shared/components/skeleton/skeleton';
 
 const PERIOD_LABELS: Record<StatsPeriod, string> = {
@@ -22,11 +21,15 @@ const PERIOD_LABELS: Record<StatsPeriod, string> = {
 })
 export class Dashboard {
   private route = inject(ActivatedRoute);
-  private auth = inject(Auth);
-  private statsService = inject(StatsAdmin);
+  private auth = inject(AuthService);
+  private reportService = inject(ReportService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
-  userName = this.auth.user()?.name ?? '';
+  // Con paramsInheritanceStrategy: 'always' (app.config.ts), companySlug
+  // llega heredado del padre sin tener que subir con route.parent.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
+  branchSlug = this.route.snapshot.paramMap.get('branchSlug')!;
+
+  userName = this.auth.me()?.user.name ?? '';
 
   periods: StatsPeriod[] = ['today', 'week', 'month', 'year'];
   periodLabel = (p: StatsPeriod) => PERIOD_LABELS[p];
@@ -56,9 +59,9 @@ export class Dashboard {
     const period = this.selectedPeriod();
 
     forkJoin({
-      summary: this.statsService.getSummary(this.slug, period),
-      timeseries: this.statsService.getTimeseries(this.slug, this.groupBy(), period),
-      topProducts: this.statsService.getTopProducts(this.slug, period, 5),
+      summary: this.reportService.getSummary(this.companySlug, this.branchSlug, period),
+      timeseries: this.reportService.getTimeseries(this.companySlug, this.branchSlug, this.groupBy(), period),
+      topProducts: this.reportService.getTopProducts(this.companySlug, this.branchSlug, period, 5),
     }).subscribe({
       next: (res) => {
         this.summary.set(res.summary);

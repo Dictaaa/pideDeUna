@@ -1,9 +1,35 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { AuditLogAdmin } from '../../services/audit-log-admin';
-import { ACTION_LABELS, AuditLogEntry, ENTITY_TYPE_OPTIONS } from '../../models/audit-log.models';
+import { AuditLogService } from '../../../../core/services/audit-log.service';
+import { AuditLog } from '../../../../core/models/audit.model';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
+
+// No exhaustivo — cubre las acciones más comunes que ya registra
+// audit.service.ts (logAction()). Lo que no esté acá se muestra tal
+// cual llegó del backend (ver actionLabel()).
+const ACTION_LABELS: Record<string, string> = {
+  'user.create': 'Creó un usuario',
+  'user.update': 'Editó un usuario',
+  'user.remove': 'Eliminó un usuario',
+  'user.role_add': 'Agregó un rol',
+  'user.role_remove': 'Quitó un rol',
+  'order.cancel': 'Canceló un pedido',
+  'order.charge': 'Cobró un pedido',
+  'payment.refund': 'Reembolsó un pago',
+  'product.create': 'Creó un producto',
+  'product.update': 'Editó un producto',
+  'product.remove': 'Eliminó un producto',
+  'promotion.create': 'Creó una promoción',
+  'promotion.update': 'Editó una promoción',
+  'company.status_change': 'Cambió el estado de la compañía',
+  'company.plan_change': 'Cambió de plan',
+};
+
+const ENTITY_TYPE_OPTIONS = [
+  'User', 'Order', 'Payment', 'Product', 'Promotion', 'MenuCategory',
+  'ModifierGroup', 'Table', 'RestaurantArea', 'Company', 'Restaurant',
+];
 
 @Component({
   selector: 'app-audit-log',
@@ -14,15 +40,16 @@ import { TableSkeleton } from '../../../../shared/components/table-skeleton/tabl
 })
 export class AuditLogPage {
   private route = inject(ActivatedRoute);
-  private service = inject(AuditLogAdmin);
+  private service = inject(AuditLogService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+  // Auditoría es de nivel COMPAÑÍA — no necesita branchSlug.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
   entityTypeOptions = ENTITY_TYPE_OPTIONS;
 
   loading = signal(true);
-  logs = signal<AuditLogEntry[]>([]);
+  logs = signal<AuditLog[]>([]);
   entityTypeFilter = signal('');
-  selectedLog = signal<AuditLogEntry | null>(null);
+  selectedLog = signal<AuditLog | null>(null);
 
   constructor() {
     this.reload();
@@ -30,13 +57,15 @@ export class AuditLogPage {
 
   reload(): void {
     this.loading.set(true);
-    this.service.list(this.slug, this.entityTypeFilter() || undefined).subscribe({
-      next: (logs) => {
-        this.logs.set(logs);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
+    this.service
+      .list(this.companySlug, this.entityTypeFilter() ? { entityType: this.entityTypeFilter() } : undefined)
+      .subscribe({
+        next: (logs) => {
+          this.logs.set(logs);
+          this.loading.set(false);
+        },
+        error: () => this.loading.set(false),
+      });
   }
 
   applyFilter(): void {
@@ -52,12 +81,11 @@ export class AuditLogPage {
     return ACTION_LABELS[action] ?? action;
   }
 
-  actorName(log: AuditLogEntry): string {
-    const actor = log.User ?? log.user;
-    return actor ? `${actor.name} (${actor.email})` : 'Sistema';
+  actorName(log: AuditLog): string {
+    return log.user ? `${log.user.name} (${log.user.email})` : 'Sistema';
   }
 
-  openDetail(log: AuditLogEntry): void {
+  openDetail(log: AuditLog): void {
     this.selectedLog.set(log);
   }
 

@@ -1,0 +1,79 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Mis Sucursales</h1>
+      @if (company(); as c) {
+        <p>
+          {{ c.name }}
+          @if (usage(); as u) {
+            · Plan {{ u.plan.name }} — {{ u.usage.branches.used }} de {{ u.usage.branches.limit ?? '∞' }} sucursales
+          }
+        </p>
+      }
+    </div>
+    <button type="button" class="btn-primary" [disabled]="atLimit()" (click)="openCreate()">+ Nueva sucursal</button>
+  </div>
+
+  @if (atLimit()) {
+    <div class="limit-banner">Ya usas todas las sucursales que permite tu plan. Mejora tu plan para agregar más.</div>
+  }
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="3" [cols]="3"></app-table-skeleton>
+  } @else {
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Sucursal</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (b of restaurants(); track b.id) {
+            <tr class="clickable-row" (click)="goToBranch(b)">
+              <td class="cell-strong">{{ b.name }}</td>
+              <td><span class="badge" [class.badge-success]="b.status === 'active'">{{ b.status }}</span></td>
+              <td class="cell-muted">Entrar →</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>Nueva sucursal</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre</span>
+      <input
+        type="text"
+        placeholder="Ej: KFC Unicentro"
+        [ngModel]="form().name"
+        (ngModelChange)="onNameChange($event)"
+        name="branchName"
+      />
+    </label>
+
+    <label class="field">
+      <span>Slug (así se ve la URL de su menú)</span>
+      <input type="text" [ngModel]="form().slug" (ngModelChange)="onSlugChange($event)" name="branchSlug" />
+    </label>
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Creando…' : 'Crear sucursal' }}
+      </button>
+    </div>
+  </div>
+}

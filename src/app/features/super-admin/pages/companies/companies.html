@@ -1,0 +1,112 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Compañías</h1>
+      <p>Todos los tenants en PidaDeUna — crea, revisa el plan, activa o suspende.</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">+ Nueva compañía</button>
+  </div>
+
+  <input
+    type="text"
+    class="search-input"
+    placeholder="Buscar por nombre o slug…"
+    [ngModel]="search()"
+    (ngModelChange)="search.set($event)"
+  />
+
+  @if (loading()) {
+    <app-table-skeleton [rows]="5" [cols]="5"></app-table-skeleton>
+  } @else if (filteredCompanies().length === 0) {
+    <div class="empty-state">No hay compañías que coincidan.</div>
+  } @else {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Slug</th>
+          <th>Plan</th>
+          <th>Sucursales</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of filteredCompanies(); track c.id) {
+          <tr>
+            <td class="cell-strong">{{ c.name }}</td>
+            <td class="cell-muted">{{ c.slug }}</td>
+            <td class="cell-muted">{{ currentPlanName(c) }}</td>
+            <td>{{ branchesCount(c) }}</td>
+            <td><span [class]="badgeClass(c.status)">{{ statusLabel(c.status) }}</span></td>
+            <td class="cell-actions">
+              <app-actions-menu [actions]="rowActions(c)"></app-actions-menu>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="overlay" (click)="closeForm()"></div>
+  <div class="panel">
+    <h2>Nueva compañía</h2>
+
+    @if (errorMessage(); as msg) {
+      <div class="form-error">{{ msg }}</div>
+    }
+
+    <label class="field">
+      <span>Nombre de la compañía</span>
+      <input type="text" [ngModel]="form().name" (ngModelChange)="updateField('name', $event)" name="name" />
+    </label>
+
+    <label class="field">
+      <span>Slug de la compañía (para la URL)</span>
+      <input type="text" placeholder="mi-compania" [ngModel]="form().slug" (ngModelChange)="updateField('slug', $event)" name="slug" />
+    </label>
+
+    <label class="field">
+      <span>NIT (opcional)</span>
+      <input type="text" [ngModel]="form().nit" (ngModelChange)="updateField('nit', $event)" name="nit" />
+    </label>
+
+    <p class="form-section-label">Primera sucursal</p>
+
+    <label class="field">
+      <span>Nombre de la sucursal</span>
+      <input type="text" [ngModel]="form().restaurantName" (ngModelChange)="updateField('restaurantName', $event)" name="restaurantName" />
+    </label>
+
+    <label class="field">
+      <span>Slug de la sucursal (para la URL)</span>
+      <input type="text" placeholder="centro" [ngModel]="form().restaurantSlug" (ngModelChange)="updateField('restaurantSlug', $event)" name="restaurantSlug" />
+    </label>
+
+    <p class="form-section-label">Usuario administrador</p>
+
+    <label class="field">
+      <span>Nombre</span>
+      <input type="text" [ngModel]="form().adminName" (ngModelChange)="updateField('adminName', $event)" name="adminName" />
+    </label>
+
+    <label class="field">
+      <span>Correo</span>
+      <input type="email" [ngModel]="form().adminEmail" (ngModelChange)="updateField('adminEmail', $event)" name="adminEmail" />
+    </label>
+
+    <label class="field">
+      <span>Contraseña inicial</span>
+      <input type="text" [ngModel]="form().adminPassword" (ngModelChange)="updateField('adminPassword', $event)" name="adminPassword" />
+    </label>
+
+    <div class="panel-actions">
+      <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+      <button type="button" class="btn-primary" [disabled]="saving()" (click)="save()">
+        {{ saving() ? 'Creando…' : 'Crear compañía' }}
+      </button>
+    </div>
+  </div>
+}

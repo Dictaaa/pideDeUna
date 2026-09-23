@@ -8,7 +8,7 @@
       </div>
       <nav class="home-nav-actions">
         <a routerLink="/login" class="nav-link">Iniciar sesión</a>
-        <a routerLink="/register" class="btn-nav-primary">Registra tu restaurante</a>
+        <a [href]="whatsappUrl" target="_blank" rel="noopener" class="btn-nav-primary">Habla con nosotros</a>
       </nav>
     </div>
   </header>
@@ -22,14 +22,14 @@
         categorías, productos, mesas, usuarios y ventas — desde un solo lugar.
       </p>
       <div class="hero-actions">
-        <a routerLink="/register" class="btn-hero-primary">Empieza gratis 14 días</a>
+        <a [href]="whatsappUrl" target="_blank" rel="noopener" class="btn-hero-primary">Empieza gratis 14 días</a>
         <a routerLink="/login" class="btn-hero-secondary">Ya tengo cuenta</a>
       </div>
       <p class="hero-note">Sin tarjeta para empezar. Cancela cuando quieras.</p>
     </div>
   </section>
 
-  <!-- ── Qué es PidaDeUna ── -->
+  <!-- ── Qué es PideDeUna ── -->
   <section class="section features-section">
     <h2 class="section-title">Todo lo que necesita tu restaurante para operar por QR</h2>
     <div class="features-grid">
@@ -69,15 +69,14 @@
             <span class="plan-price">{{ '$' + (+plan.priceMonthly | number: '1.0-0') }}<small>/mes</small></span>
 
             <ul class="plan-limits">
-              <li>{{ plan.maxCategories ?? 'Sin límite' }} categorías</li>
               <li>{{ plan.maxProducts ?? 'Sin límite' }} productos</li>
               <li>{{ plan.maxTables ?? 'Sin límite' }} mesas</li>
               <li>{{ plan.maxUsers ?? 'Sin límite' }} usuarios</li>
-              <li>{{ plan.maxPhotos ?? 'Sin límite' }} fotos</li>
-              <li>{{ plan.maxVideos ?? 'Sin límite' }} videos</li>
+              <li>{{ plan.maxBranches ?? 'Sin límite' }} sucursales</li>
+              <li>{{ plan.storageQuotaMb }} MB de almacenamiento</li>
             </ul>
 
-            <a routerLink="/register" class="btn-plan">Comenzar con {{ plan.name }}</a>
+            <a [href]="whatsappUrl" target="_blank" rel="noopener" class="btn-plan">Comenzar con {{ plan.name }}</a>
           </div>
         }
       </div>
@@ -89,21 +88,11 @@
     <h2 class="section-title">¿Tienes preguntas?</h2>
     <p class="section-sub">Escríbenos, te respondemos rápido.</p>
     <div class="contact-grid">
-      <!-- <a href="mailto:hola@pidadeuna.com" class="contact-card">
-        <span class="contact-icon">✉️</span>
-        <span class="contact-label">Correo</span>
-        <span class="contact-value">&#64;pidadeuna.com</span>
-      </a> -->
-      <a href="https://wa.me/573154789845" target="_blank" rel="noopener" class="contact-card">
+      <a [href]="whatsappUrl" target="_blank" rel="noopener" class="contact-card">
         <span class="contact-icon">💬</span>
         <span class="contact-label">WhatsApp</span>
         <span class="contact-value">+57 315 478 9845</span>
       </a>
-      <!-- <div class="contact-card">
-        <span class="contact-icon">📍</span>
-        <span class="contact-label">Ubicación</span>
-        <span class="contact-value">Bogotá, Colombia</span>
-      </div> -->
     </div>
   </section>
 

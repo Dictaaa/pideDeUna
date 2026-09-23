@@ -1,18 +1,30 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth-guard';
-import { roleGuard } from './core/guards/role-guard';
-import { homeGuard } from './core/guards/home-guard';
-import { superAdminGuard } from './core/guards/super-admin-guard';
-
-const ADMIN_ROLES = ['RESTAURANT_ADMIN', 'SUPER_ADMIN'];
+import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { roleGuard } from './core/guards/role.guard';
+import { homeGuard } from './core/guards/home.guard';
+import { superAdminGuard } from './core/guards/super-admin.guard';
+import { RoleCode } from './core/models/common.model';
 
 /**
- * Mismo esquema de URL por slug que en Desvare (desvare.com/:slug):
- * cada restaurante vive en pidedeuna.com/:slug para el menú público
- * (con o sin /mesa/:token, el link que trae el QR físico) — y en
- * pidedeuna.com/admin/:slug/* para el panel de administrador,
- * protegido por sesión.
+ * Esquema de URL con DOS niveles de slug (compañía → sucursal), no uno
+ * — reflejo directo de cómo quedó el backend tras la reingeniería:
+ *
+ *   pidedeuna.com/:companySlug                          → elegir sucursal (público)
+ *   pidedeuna.com/:companySlug/:branchSlug              → menú de esa sucursal (público)
+ *   pidedeuna.com/:companySlug/:branchSlug/mesa/:token  → QR físico de una mesa (público)
+ *   pidedeuna.com/:companySlug/:branchSlug/pedido/:id   → seguimiento en vivo del pedido (público)
+ *   pidedeuna.com/admin/:companySlug/*                  → cosas de COMPAÑÍA (catálogo, usuarios, plan…)
+ *   pidedeuna.com/admin/:companySlug/:branchSlug/*      → cosas de SUCURSAL (pedidos, cocina, mesas…)
+ *   pidedeuna.com/super-admin/*                         → plataforma completa (SUPER_ADMIN, sin slug)
+ *
+ * OJO — "admin", "login", "super-admin", "olvide-mi-clave",
+ * "reset-password" y "forbidden" quedan como slugs de compañía
+ * PROHIBIDOS (colisionan con estas rutas). Valídalo también en el
+ * backend al crear una compañía, no solo acá.
  */
+
+const ADMIN_ROLES: readonly RoleCode[] = ['RESTAURANT_ADMIN', 'SUPER_ADMIN'];
+
 export const routes: Routes = [
   {
     path: '',
@@ -21,57 +33,25 @@ export const routes: Routes = [
   },
 
   // ── Auth (públicas) ─────────────────────────────────────
+  // Quité /register: no hay registro público — el SUPER_ADMIN crea
+  // las compañías desde /super-admin/companias (por seguridad).
   {
     path: 'login',
+    canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/pages/login/login').then((m) => m.Login),
   },
-  {
-    path: 'register',
-    loadComponent: () => import('./features/auth/pages/register/register').then((m) => m.Register),
-  },
-  {
-    path: 'olvide-mi-clave',
-    loadComponent: () =>
-      import('./features/auth/pages/forgot-password/forgot-password').then((m) => m.ForgotPassword),
-  },
-  {
-    path: 'reset-password',
-    loadComponent: () => import('./features/auth/pages/reset-password/reset-password').then((m) => m.ResetPassword),
-  },
 
-  // ── Panel de administrador (protegido) ──────────────────
+  // ── Panel de administrador — NIVEL COMPAÑÍA ─────────────
   {
-    path: 'admin/:slug',
+    path: 'admin/:companySlug',
     canActivate: [authGuard],
     loadComponent: () => import('./core/layout/shell/shell').then((m) => m.Shell),
     children: [
-      // Dashboard es el fallback genérico — accesible a cualquier staff
-      // logueado (no solo admin), así el '' -> 'dashboard' de acá abajo
-      // nunca cae en un loop de redirects para mesera/cocina. El login
-      // igual manda a cada rol directo a SU pantalla (ver login.ts).
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      {
-        path: 'dashboard',
-        canActivate: [roleGuard(...ADMIN_ROLES)],
-        loadComponent: () => import('./features/dashboard/pages/dashboard/dashboard').then((m) => m.Dashboard),
-      },
-      {
-        path: 'pedidos',
-        canActivate: [roleGuard(...ADMIN_ROLES, 'WAITER', 'CASHIER')],
-        loadComponent: () => import('./features/orders/pages/orders/orders').then((m) => m.Orders),
-      },
-      {
-        path: 'historial',
-        canActivate: [roleGuard(...ADMIN_ROLES, 'WAITER', 'KITCHEN', 'CASHIER')],
-        loadComponent: () =>
-          import('./features/orders/pages/order-history/order-history').then((m) => m.OrderHistory),
-      },
-      {
-        path: 'cocina',
-        canActivate: [roleGuard(...ADMIN_ROLES, 'KITCHEN')],
-        loadComponent: () =>
-          import('./features/kitchen/pages/kitchen-board/kitchen-board').then((m) => m.KitchenBoard),
-      },
+      // Sin sucursal fija, lo primero que tiene sentido ver es la
+      // lista de sucursales (antes redirigía a "dashboard", que ya
+      // no existe a este nivel — el dashboard es de SUCURSAL).
+      { path: '', redirectTo: 'sucursales', pathMatch: 'full' },
+
       {
         path: 'categorias',
         canActivate: [roleGuard(...ADMIN_ROLES)],
@@ -94,14 +74,9 @@ export const routes: Routes = [
         loadComponent: () => import('./features/promotions/pages/promotions/promotions').then((m) => m.Promotions),
       },
       {
-        path: 'areas',
+        path: 'usuarios',
         canActivate: [roleGuard(...ADMIN_ROLES)],
-        loadComponent: () => import('./features/areas/pages/areas/areas').then((m) => m.Areas),
-      },
-      {
-        path: 'mesas',
-        canActivate: [roleGuard(...ADMIN_ROLES)],
-        loadComponent: () => import('./features/tables/pages/tables/tables').then((m) => m.Tables),
+        loadComponent: () => import('./features/users/pages/users/users').then((m) => m.Users),
       },
       {
         path: 'auditoria',
@@ -109,9 +84,9 @@ export const routes: Routes = [
         loadComponent: () => import('./features/audit-log/pages/audit-log/audit-log').then((m) => m.AuditLogPage),
       },
       {
-        path: 'usuarios',
+        path: 'sucursales',
         canActivate: [roleGuard(...ADMIN_ROLES)],
-        loadComponent: () => import('./features/users/pages/users/users').then((m) => m.Users),
+        loadComponent: () => import('./features/branches/pages/branches/branches').then((m) => m.Branches),
       },
       {
         path: 'plan',
@@ -123,25 +98,70 @@ export const routes: Routes = [
         canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/settings/pages/settings/settings').then((m) => m.Settings),
       },
+
+      // ── Panel de administrador — NIVEL SUCURSAL, anidado ──
+      {
+        path: ':branchSlug',
+        children: [
+          { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+          {
+            path: 'dashboard',
+            canActivate: [roleGuard(...ADMIN_ROLES)],
+            loadComponent: () => import('./features/dashboard/pages/dashboard/dashboard').then((m) => m.Dashboard),
+          },
+          {
+            path: 'pedidos',
+            canActivate: [roleGuard(...ADMIN_ROLES, 'WAITER')],
+            loadComponent: () => import('./features/orders/pages/orders/orders').then((m) => m.Orders),
+          },
+          {
+            path: 'caja',
+            canActivate: [roleGuard(...ADMIN_ROLES, 'CASHIER')],
+            loadComponent: () => import('./features/caja/pages/caja/caja').then((m) => m.Caja),
+          },
+          {
+            path: 'historial',
+            canActivate: [roleGuard(...ADMIN_ROLES, 'WAITER', 'KITCHEN', 'CASHIER')],
+            loadComponent: () =>
+              import('./features/orders/pages/order-history/order-history').then((m) => m.OrderHistory),
+          },
+          {
+            path: 'cocina',
+            canActivate: [roleGuard(...ADMIN_ROLES, 'KITCHEN')],
+            loadComponent: () =>
+              import('./features/kitchen/pages/kitchen-board/kitchen-board').then((m) => m.KitchenBoard),
+          },
+          {
+            path: 'areas',
+            canActivate: [roleGuard(...ADMIN_ROLES)],
+            loadComponent: () => import('./features/areas/pages/areas/areas').then((m) => m.Areas),
+          },
+          {
+            path: 'mesas',
+            canActivate: [roleGuard(...ADMIN_ROLES)],
+            loadComponent: () => import('./features/tables/pages/tables/tables').then((m) => m.Tables),
+          },
+        ],
+      },
     ],
   },
 
-  // ── Super Admin (protegido, sin restaurante) ────────────
+  // ── Super Admin (protegido, sin compañía/sucursal) ──────
   {
     path: 'super-admin',
     canActivate: [superAdminGuard],
     loadComponent: () =>
       import('./features/super-admin/layout/super-admin-shell/super-admin-shell').then((m) => m.SuperAdminShell),
     children: [
-      { path: '', redirectTo: 'restaurantes', pathMatch: 'full' },
+      { path: '', redirectTo: 'companias', pathMatch: 'full' },
       {
-        path: 'restaurantes',
-        loadComponent: () => import('./features/super-admin/pages/restaurants/restaurants').then((m) => m.Restaurants),
+        path: 'companias',
+        loadComponent: () => import('./features/super-admin/pages/companies/companies').then((m) => m.Companies),
       },
       {
-        path: 'restaurantes/:id',
+        path: 'companias/:id',
         loadComponent: () =>
-          import('./features/super-admin/pages/restaurant-detail/restaurant-detail').then((m) => m.RestaurantDetailPage),
+          import('./features/super-admin/pages/company-detail/company-detail').then((m) => m.CompanyDetailPage),
       },
       {
         path: 'planes',
@@ -150,22 +170,33 @@ export const routes: Routes = [
     ],
   },
 
-  // ── Menú público (lo que ve el cliente en la mesa) ──────
+  // ── Menú público (lo que ve el cliente) ─────────────────
+  // Van del más específico al menos específico — Angular matchea en
+  // orden, igual que Express: si ":companySlug/:branchSlug" quedara
+  // antes que "mesa/:token" o "pedido/:orderId", nunca los alcanzaría.
   {
-    path: ':slug/mesa/:token',
+    path: ':companySlug/:branchSlug/mesa/:token',
     loadComponent: () => import('./features/menu/pages/menu-page/menu-page').then((m) => m.MenuPage),
   },
   {
-    path: ':slug',
+    path: ':companySlug/:branchSlug/pedido/:orderId',
+    loadComponent: () =>
+      import('./features/menu/pages/order-tracking/order-tracking').then((m) => m.OrderTracking),
+  },
+  {
+    path: ':companySlug/:branchSlug',
     loadComponent: () => import('./features/menu/pages/menu-page/menu-page').then((m) => m.MenuPage),
   },
   {
-  path: ':slug/pedido/:orderId',
-  loadComponent: () =>
-    import('./features/menu/pages/order-tracking/order-tracking').then((m) => m.OrderTracking),
-},
+    // Sin sucursal: selector (o auto-redirect si la compañía tiene una
+    // sola activa) — necesita CompanyService.getPublicInfo(), que es
+    // el endpoint público nuevo (GET /:companySlug/public).
+    path: ':companySlug',
+    loadComponent: () =>
+      import('./features/menu/pages/branch-picker/branch-picker').then((m) => m.BranchPicker),
+  },
 
-  // ── 404 — SIEMPRE al final, es la que atrapa todo lo demás ──
+  // ── 404 — SIEMPRE al final ───────────────────────────────
   {
     path: '**',
     loadComponent: () => import('./features/not-found/pages/not-found/not-found').then((m) => m.NotFound),

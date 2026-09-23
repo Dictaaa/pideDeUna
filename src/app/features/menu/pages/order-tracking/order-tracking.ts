@@ -1,13 +1,16 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Menu } from '../../services/menu';
-import { PublicOrderService } from '../../services/public-order';
-import { PublicOrderStatus } from '../../models/public-order.models';
-import { Restaurant } from '../../../../core/models/menu';
+import { CustomerOrderService } from '../../../../core/services/customer-order.service';
+import { CompanyService } from '../../../../core/services/company.service';
+import { SocketService } from '../../../../core/services/socket.service';
+import { Order } from '../../../../core/models/order.model';
+import { PublicCompanyInfo } from '../../../../core/models/company.model';
 import { applyMenuFont } from '../../../../shared/utils/menu-fonts';
+import { getSessionToken } from '../../utils/session-token-storage';
 
-const POLL_MS = 5000;
+const SOCKET_SAFETY_POLL_MS = 30000; // por si el socket se cae sin avisar
+const NO_SOCKET_POLL_MS = 5000; // sin token de sesión (ej. link compartido) — mismo intervalo que tenías antes
 
 type Stage = 'PENDING' | 'PREPARING' | 'READY' | 'CANCELLED';
 const STAGE_ORDER: Stage[] = ['PENDING', 'PREPARING', 'READY'];
@@ -21,24 +24,31 @@ const STAGE_ORDER: Stage[] = ['PENDING', 'PREPARING', 'READY'];
 })
 export class OrderTracking implements OnDestroy {
   private route = inject(ActivatedRoute);
-  private menuService = inject(Menu);
-  private orderService = inject(PublicOrderService);
+  private customerOrderService = inject(CustomerOrderService);
+  private companyService = inject(CompanyService);
+  private socket = inject(SocketService);
 
-  slug = this.route.snapshot.paramMap.get('slug')!;
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
+  branchSlug = this.route.snapshot.paramMap.get('branchSlug')!;
   orderId = this.route.snapshot.paramMap.get('orderId')!;
 
   loading = signal(true);
-  status = signal<PublicOrderStatus | null>(null);
+  order = signal<Order | null>(null);
   errorMessage = signal<string | null>(null);
-  restaurant = signal<Restaurant | null>(null);
 
-  private intervalId: ReturnType<typeof setInterval>;
+  // Reaplica marca por si el cliente llegó directo a este link
+  // (lo compartieron, recargó la pestaña) sin pasar por el menú antes.
+  company = signal<PublicCompanyInfo | null>(null);
+  branch = computed(() => this.company()?.restaurants.find((r) => r.slug === this.branchSlug) ?? null);
+
+  private pollId: ReturnType<typeof setInterval> | null = null;
+  private usingSocket = false;
 
   stage = computed<Stage>(() => {
-    const s = this.status()?.status;
+    const s = this.order()?.status;
     if (s === 'CANCELLED') return 'CANCELLED';
     if (s === 'READY' || s === 'SERVED' || s === 'COMPLETED') return 'READY';
-    if (s === 'PREPARING') return 'PREPARING';
+    if (s === 'PREPARING' || s === 'CONFIRMED') return 'PREPARING';
     return 'PENDING';
   });
 
@@ -56,34 +66,65 @@ export class OrderTracking implements OnDestroy {
   });
 
   constructor() {
-    // Reaplica el color/tipografía/nombre de marca por si el cliente
-    // llegó directo a esta página (compartieron el link, recargó, etc.)
-    // sin pasar por el menú primero en esta pestaña.
-    this.menuService.getBySlug(this.slug).subscribe({
-      next: (res) => {
-        this.restaurant.set(res.restaurant);
-        document.documentElement.style.setProperty('--primary', res.restaurant.primaryColor);
-        document.documentElement.style.setProperty('--secondary', res.restaurant.secondaryColor);
-        applyMenuFont(res.restaurant.fontFamily);
+    this.companyService.getPublicInfo(this.companySlug).subscribe({
+      next: (c) => {
+        this.company.set(c);
+        document.documentElement.style.setProperty('--primary', c.primaryColor);
+        document.documentElement.style.setProperty('--secondary', c.secondaryColor);
+        applyMenuFont(c.fontFamily);
       },
     });
 
     this.reload();
-    this.intervalId = setInterval(() => this.reload(true), POLL_MS);
+    this.setupRealtime();
   }
 
   ngOnDestroy(): void {
-    clearInterval(this.intervalId);
+    if (this.pollId) clearInterval(this.pollId);
+    if (this.usingSocket) this.socket.disconnect();
+  }
+
+  /**
+   * Si tenemos el token de sesión guardado (lo dejó MenuPage al
+   * escanear el QR), las actualizaciones llegan al instante por
+   * socket, con un poll cada 30s solo como red de seguridad. Si
+   * alguien más abre este link compartido (sin el token en SU
+   * navegador), sigue funcionando con polling normal cada 5s — más
+   * lento, pero funciona igual gracias a trackOrder() siendo público.
+   */
+  private setupRealtime(): void {
+    const token = getSessionToken(this.companySlug, this.branchSlug);
+    if (!token) {
+      this.startPolling(NO_SOCKET_POLL_MS);
+      return;
+    }
+
+    this.usingSocket = true;
+    this.socket.connectAsCustomer(token);
+
+    this.socket.on<{ orderId: string }>('order:status_changed').subscribe((payload) => {
+      if (payload.orderId === this.orderId) this.reload(true);
+    });
+    this.socket.on<{ orderId: string }>('order_item:kitchen_status_changed').subscribe((payload) => {
+      if (payload.orderId === this.orderId) this.reload(true);
+    });
+
+    this.startPolling(SOCKET_SAFETY_POLL_MS);
+  }
+
+  private startPolling(ms: number): void {
+    this.pollId = setInterval(() => this.reload(true), ms);
   }
 
   reload(silent = false): void {
     if (!silent) this.loading.set(true);
-    this.orderService.getStatus(this.slug, this.orderId).subscribe({
-      next: (status) => {
-        this.status.set(status);
+    this.customerOrderService.trackOrder(this.companySlug, this.branchSlug, this.orderId).subscribe({
+      next: (order) => {
+        this.order.set(order);
         this.loading.set(false);
-        if (['READY', 'SERVED', 'COMPLETED', 'CANCELLED'].includes(status.status)) {
-          clearInterval(this.intervalId);
+        if ((order.status === 'COMPLETED' || order.status === 'CANCELLED') && this.pollId) {
+          clearInterval(this.pollId);
+          this.pollId = null;
         }
       },
       error: () => {

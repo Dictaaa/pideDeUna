@@ -3,18 +3,18 @@
     <div class="state-message">Cargando tu pedido…</div>
   } @else if (errorMessage()) {
     <div class="state-message error">{{ errorMessage() }}</div>
-  } @else if (status(); as s) {
+  } @else if (order(); as o) {
     <div class="tracking-card">
       <div class="tracking-header">
-        @if (restaurant(); as r) {
-          @if (r.logoUrl) {
-            <img class="tracking-logo" [src]="r.logoUrl" alt="" />
+        @if (company(); as c) {
+          @if (c.logoUrl) {
+            <img class="tracking-logo" [src]="c.logoUrl" alt="" />
           } @else {
-            <div class="tracking-logo-mark">{{ r.name.charAt(0) }}</div>
+            <div class="tracking-logo-mark">{{ c.name.charAt(0) }}</div>
           }
-          <span class="tracking-restaurant-name">{{ r.name }}</span>
+          <span class="tracking-restaurant-name">{{ branch()?.name ?? c.name }}</span>
         }
-        <h1>Pedido #{{ s.orderNumber }}</h1>
+        <h1>Pedido #{{ o.orderNumber }}</h1>
       </div>
 
       @if (stage() === 'CANCELLED') {
@@ -52,7 +52,7 @@
       <div class="order-summary">
         <h2>Tu pedido</h2>
         <div class="summary-items">
-          @for (item of s.items; track item.productName + item.quantity) {
+          @for (item of o.items ?? []; track item.id) {
             <div class="summary-item-row">
               <span class="summary-item-name">{{ item.quantity }} × {{ item.productName }}</span>
             </div>
@@ -63,11 +63,11 @@
         </div>
         <div class="summary-total">
           <span>Total</span>
-          <span>{{ '$' + (+s.total | number: '1.0-0') }}</span>
+          <span>{{ '$' + (+o.total | number: '1.0-0') }}</span>
         </div>
       </div>
 
-      <a class="back-link" [routerLink]="['/', slug]">← Volver al menú</a>
+      <a class="back-link" [routerLink]="['/', companySlug, branchSlug]">← Volver al menú</a>
     </div>
   }
 </div>

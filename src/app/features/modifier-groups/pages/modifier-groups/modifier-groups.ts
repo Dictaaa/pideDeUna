@@ -2,14 +2,22 @@ import { Component, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { ModifierGroupAdmin } from '../../services/modifier-group-admin';
-import {
-  AdminModifierGroup,
-  AdminModifierOption,
-  ModifierGroupFormValue,
-  ModifierOptionFormValue,
-} from '../../models/modifier-group.models';
+import { ModifierGroupService } from '../../../../core/services/menu.service';
+import { Modifier, ModifierGroup } from '../../../../core/models/menu.model';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
+
+interface ModifierGroupFormValue {
+  name: string;
+  minSelections: number;
+  maxSelections: number;
+  required: boolean;
+  sortOrder: number;
+}
+
+interface ModifierOptionFormValue {
+  name: string;
+  price: number;
+}
 
 const EMPTY_FORM: ModifierGroupFormValue = {
   name: '',
@@ -28,12 +36,13 @@ const EMPTY_FORM: ModifierGroupFormValue = {
 })
 export class ModifierGroups {
   private route = inject(ActivatedRoute);
-  private service = inject(ModifierGroupAdmin);
+  private service = inject(ModifierGroupService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+  // Adicionales es de nivel COMPAÑÍA — no necesita branchSlug.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
 
   loading = signal(true);
-  groups = signal<AdminModifierGroup[]>([]);
+  groups = signal<ModifierGroup[]>([]);
 
   // Panel de crear/editar el GRUPO (nombre, mínimos/máximos, obligatorio).
   formOpen = signal(false);
@@ -42,7 +51,9 @@ export class ModifierGroups {
   saving = signal(false);
   errorMessage = signal<string | null>(null);
 
-  // Opciones iniciales al CREAR un grupo nuevo — se arman antes de guardar.
+  // Opciones iniciales al CREAR un grupo nuevo — se arman antes de guardar
+  // y se mandan junto con el grupo en la misma llamada (create() las acepta
+  // como parte del mismo payload, no hay un segundo paso).
   draftOptions = signal<ModifierOptionFormValue[]>([]);
   draftOptionName = signal('');
   draftOptionPrice = signal(0);
@@ -58,7 +69,7 @@ export class ModifierGroups {
 
   reload(): void {
     this.loading.set(true);
-    this.service.list(this.slug).subscribe({
+    this.service.list(this.companySlug).subscribe({
       next: (groups) => {
         this.groups.set(groups);
         this.loading.set(false);
@@ -79,7 +90,7 @@ export class ModifierGroups {
     this.formOpen.set(true);
   }
 
-  openEdit(group: AdminModifierGroup): void {
+  openEdit(group: ModifierGroup): void {
     this.editingGroupId.set(group.id);
     this.form.set({
       name: group.name,
@@ -122,8 +133,8 @@ export class ModifierGroups {
 
     const id = this.editingGroupId();
     const request = id
-      ? this.service.update(this.slug, id, this.form())
-      : this.service.create(this.slug, this.form(), this.draftOptions());
+      ? this.service.update(this.companySlug, id, this.form())
+      : this.service.create(this.companySlug, { ...this.form(), modifiers: this.draftOptions() });
 
     request.subscribe({
       next: () => {
@@ -138,14 +149,14 @@ export class ModifierGroups {
     });
   }
 
-  removeGroup(group: AdminModifierGroup): void {
+  removeGroup(group: ModifierGroup): void {
     if (!confirm(`¿Eliminar "${group.name}" y todas sus opciones? Los productos que lo usen se quedan sin este grupo.`)) return;
-    this.service.remove(this.slug, group.id).subscribe({ next: () => this.reload() });
+    this.service.remove(this.companySlug, group.id).subscribe({ next: () => this.reload() });
   }
 
-  // ---------------- Opciones de un grupo existente ----------------
+  // ---------------- Opciones (modifiers) de un grupo existente ----------------
 
-  startAddOption(group: AdminModifierGroup): void {
+  startAddOption(group: ModifierGroup): void {
     this.addingOptionGroupId.set(group.id);
     this.optionName.set('');
     this.optionPrice.set(0);
@@ -155,9 +166,9 @@ export class ModifierGroups {
     this.addingOptionGroupId.set(null);
   }
 
-  confirmAddOption(group: AdminModifierGroup): void {
+  confirmAddOption(group: ModifierGroup): void {
     if (!this.optionName().trim()) return;
-    this.service.addOption(this.slug, group.id, { name: this.optionName().trim(), price: this.optionPrice() }).subscribe({
+    this.service.addModifier(this.companySlug, group.id, { name: this.optionName().trim(), price: this.optionPrice() }).subscribe({
       next: () => {
         this.addingOptionGroupId.set(null);
         this.reload();
@@ -165,8 +176,9 @@ export class ModifierGroups {
     });
   }
 
-  removeOption(group: AdminModifierGroup, option: AdminModifierOption): void {
-    if (!confirm(`¿Quitar "${option.name}"?`)) return;
-    this.service.removeOption(this.slug, group.id, option.id).subscribe({ next: () => this.reload() });
+  /** Los modifiers se borran por su propio id — no hace falta el id del grupo. */
+  removeOption(modifier: Modifier): void {
+    if (!confirm(`¿Quitar "${modifier.name}"?`)) return;
+    this.service.removeModifier(this.companySlug, modifier.id).subscribe({ next: () => this.reload() });
   }
 }

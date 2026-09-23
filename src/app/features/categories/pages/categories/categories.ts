@@ -1,10 +1,17 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Category } from '../../services/category';
-import { AdminCategory, CategoryFormValue } from '../../models/category.models';
+import { MenuCategoryService } from '../../../../core/services/menu.service';
+import { MenuCategory } from '../../../../core/models/menu.model';
 import { TableSkeleton } from '../../../../shared/components/table-skeleton/table-skeleton';
 import { ActionsMenu, RowAction } from '../../../../shared/components/actions-menu/actions-menu/actions-menu';
+
+interface CategoryFormValue {
+  name: string;
+  description: string;
+  sortOrder: number;
+  isActive: boolean;
+}
 
 const EMPTY_FORM: CategoryFormValue = { name: '', description: '', sortOrder: 0, isActive: true };
 
@@ -17,12 +24,13 @@ const EMPTY_FORM: CategoryFormValue = { name: '', description: '', sortOrder: 0,
 })
 export class Categories {
   private route = inject(ActivatedRoute);
-  private categoryService = inject(Category);
+  private categoryService = inject(MenuCategoryService);
 
-  slug = this.route.parent!.snapshot.paramMap.get('slug')!;
+  // Categorías es de nivel COMPAÑÍA — no necesita branchSlug.
+  companySlug = this.route.snapshot.paramMap.get('companySlug')!;
 
   loading = signal(true);
-  categories = signal<AdminCategory[]>([]);
+  categories = signal<MenuCategory[]>([]);
 
   formOpen = signal(false);
   editingId = signal<string | null>(null);
@@ -36,7 +44,7 @@ export class Categories {
 
   reload(): void {
     this.loading.set(true);
-    this.categoryService.list(this.slug).subscribe({
+    this.categoryService.list(this.companySlug).subscribe({
       next: (cats) => {
         this.categories.set(cats);
         this.loading.set(false);
@@ -52,7 +60,7 @@ export class Categories {
     this.formOpen.set(true);
   }
 
-  openEdit(cat: AdminCategory): void {
+  openEdit(cat: MenuCategory): void {
     this.editingId.set(cat.id);
     this.form.set({
       name: cat.name,
@@ -82,8 +90,8 @@ export class Categories {
 
     const id = this.editingId();
     const request = id
-      ? this.categoryService.update(this.slug, id, this.form())
-      : this.categoryService.create(this.slug, this.form());
+      ? this.categoryService.update(this.companySlug, id, this.form())
+      : this.categoryService.create(this.companySlug, this.form());
 
     request.subscribe({
       next: () => {
@@ -98,16 +106,16 @@ export class Categories {
     });
   }
 
-  remove(cat: AdminCategory): void {
+  remove(cat: MenuCategory): void {
     if (!confirm(`¿Eliminar "${cat.name}"? Los productos que tenga quedan sin categoría.`)) return;
-    this.categoryService.remove(this.slug, cat.id).subscribe({ next: () => this.reload() });
+    this.categoryService.remove(this.companySlug, cat.id).subscribe({ next: () => this.reload() });
   }
 
-  badgeClass(cat: AdminCategory): string {
+  badgeClass(cat: MenuCategory): string {
     return cat.isActive ? 'badge-success' : 'badge-neutral';
   }
 
-  rowActions(cat: AdminCategory): RowAction[] {
+  rowActions(cat: MenuCategory): RowAction[] {
     return [
       { label: 'Editar', icon: '✏️', handler: () => this.openEdit(cat) },
       { label: 'Eliminar', icon: '🗑️', handler: () => this.remove(cat), danger: true },

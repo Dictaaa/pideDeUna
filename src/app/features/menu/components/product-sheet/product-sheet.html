@@ -44,29 +44,29 @@
     <div class="sheet-body">
       <h2 class="sheet-title">{{ p.name }}</h2>
       <p class="sheet-price">
-        @if (p.compareAtPrice && +p.compareAtPrice > +p.price) {
+        @if (p.compareAtPrice && +p.compareAtPrice > +p.effectivePrice) {
           <span class="sheet-price-compare">{{ +p.compareAtPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
         }
-        <span [class.sheet-price-discounted]="p.compareAtPrice && +p.compareAtPrice > +p.price">
-          {{ +p.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+        <span [class.sheet-price-discounted]="p.compareAtPrice && +p.compareAtPrice > +p.effectivePrice">
+          {{ +p.effectivePrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
         </span>
       </p>
       @if (p.description) {
         <p class="sheet-desc">{{ p.description }}</p>
       }
 
-      @if (p.allergens.length || p.ingredients.length) {
+      @if ((p.allergens?.length ?? 0) > 0 || (p.ingredients?.length ?? 0) > 0) {
         <div class="tag-row">
-          @for (a of p.allergens; track a.id) {
+          @for (a of p.allergens ?? []; track a.id) {
             <span class="tag allergen">⚠ {{ a.name }}</span>
           }
-          @for (i of p.ingredients; track i.id) {
+          @for (i of p.ingredients ?? []; track i.id) {
             <span class="tag">{{ i.name }}</span>
           }
         </div>
       }
 
-      @for (group of p.modifierGroups; track group.id) {
+      @for (group of p.modifierGroups ?? []; track group.id) {
         <div class="group">
           <div class="group-head">
             <h3>{{ group.name }}</h3>
@@ -74,21 +74,21 @@
               {{ group.required ? 'Obligatorio' : 'Hasta ' + group.maxSelections }}
             </span>
           </div>
-          @for (opt of group.options ?? []; track opt.id) {
+          @for (mod of group.modifiers ?? []; track mod.id) {
             <div
               class="option-row"
-              [class.selected]="isSelected(group.id, opt.id)"
-              (click)="toggleOption(group, opt)"
+              [class.selected]="isSelected(group.id, mod.id)"
+              (click)="toggleOption(group, mod)"
             >
               <div class="option-left">
                 <div [class]="group.maxSelections === 1 ? 'radio' : 'checkbox'">
                   <div class="dot-fill"></div>
                 </div>
-                <span>{{ opt.name }}</span>
+                <span>{{ mod.name }}</span>
               </div>
               <span class="option-price">
-                @if (+opt.price > 0) {
-                  + {{ +opt.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                @if (+mod.price > 0) {
+                  + {{ +mod.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
                 }
               </span>
             </div>
@@ -138,7 +138,7 @@
 
     <div class="sheet-body">
       <h2 class="sheet-title">🏷️ {{ c.name }}</h2>
-      <p class="sheet-price">{{ +(c.fixedAmount ?? 0) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+      <p class="sheet-price">{{ +(c.effectiveFixedAmount ?? c.fixedAmount ?? 0) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
       @if (c.description) {
         <p class="sheet-desc">{{ c.description }}</p>
       }
@@ -190,7 +190,7 @@
         (click)="confirmCombo($event)"
       >
         <span>Agregar combo</span>
-        <span>{{ +(c.fixedAmount ?? 0) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+        <span>{{ +(c.effectiveFixedAmount ?? c.fixedAmount ?? 0) | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
       </button>
     </div>
   }
