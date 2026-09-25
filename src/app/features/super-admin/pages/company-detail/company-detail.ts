@@ -45,6 +45,14 @@ export class CompanyDetailPage {
   changingStatus = signal(false);
   errorMessage = signal<string | null>(null);
 
+  // Crear el primer admin cuando la compañía se quedó sin ninguno —
+  // por ejemplo, si createAdminUser falló al crear la compañía.
+  adminName = signal('');
+  adminEmail = signal('');
+  adminPassword = signal('');
+  creatingAdmin = signal(false);
+  adminCreated = signal(false);
+
   constructor() {
     this.reload();
     this.planService.list().subscribe({ next: (plans) => this.plans.set(plans) });
@@ -64,6 +72,10 @@ export class CompanyDetailPage {
 
   userRoleLabels(userRoles: UserRole[] | undefined): string {
     return (userRoles ?? []).map((ur) => ur.role?.name ?? ur.roleId).join(', ') || '—';
+  }
+
+  trialEndsLabel(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   changeStatus(status: CompanyStatus): void {
@@ -103,5 +115,37 @@ export class CompanyDetailPage {
         this.errorMessage.set(err?.error?.error || 'No se pudo cambiar el plan.');
       },
     });
+  }
+
+  createAdminUser(): void {
+    if (!this.adminName().trim() || !this.adminEmail().trim() || this.adminPassword().length < 8) {
+      this.errorMessage.set('Nombre, correo y una contraseña de al menos 8 caracteres son obligatorios.');
+      return;
+    }
+
+    this.creatingAdmin.set(true);
+    this.errorMessage.set(null);
+
+    this.service
+      .createAdminUser(this.companyId, {
+        name: this.adminName(),
+        email: this.adminEmail(),
+        password: this.adminPassword(),
+      })
+      .subscribe({
+        next: () => {
+          this.creatingAdmin.set(false);
+          this.adminCreated.set(true);
+          this.adminName.set('');
+          this.adminEmail.set('');
+          this.adminPassword.set('');
+          this.reload();
+          setTimeout(() => this.adminCreated.set(false), 1800);
+        },
+        error: (err) => {
+          this.creatingAdmin.set(false);
+          this.errorMessage.set(err?.error?.error || 'No se pudo crear el usuario administrador.');
+        },
+      });
   }
 }

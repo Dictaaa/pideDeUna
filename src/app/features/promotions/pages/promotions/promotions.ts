@@ -185,11 +185,17 @@ export class Promotions {
     this.promotionService.update(this.companySlug, promo.id, { isActive: false }).subscribe({ next: () => this.reload() });
   }
 
+  remove(promo: Promotion): void {
+    if (!confirm(`¿Eliminar "${promo.name}"? Esto no se puede deshacer.`)) return;
+    this.promotionService.remove(this.companySlug, promo.id).subscribe({ next: () => this.reload() });
+  }
+
   rowActions(promo: Promotion): RowAction[] {
     const actions: RowAction[] = [{ label: 'Editar', icon: '✏️', handler: () => this.openEdit(promo) }];
     if (promo.isActive) {
       actions.push({ label: 'Desactivar', icon: '⛔', handler: () => this.deactivate(promo), danger: true });
     }
+    actions.push({ label: 'Eliminar', icon: '🗑️', handler: () => this.remove(promo), danger: true });
     return actions;
   }
 

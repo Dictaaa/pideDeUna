@@ -83,6 +83,7 @@ export interface CompanyUsage {
     maxUsers: number | null;
     maxProducts: number | null;
     maxBranches: number | null;
+    maxOrdersMonthly: number | null;
     storageQuotaMb: number;
   };
   subscription: {
@@ -97,6 +98,7 @@ export interface CompanyUsage {
     tables: UsageItem;
     users: UsageItem;
     branches: UsageItem;
+    ordersMonthly: UsageItem;
     storageMb: UsageItem;
   };
 }

@@ -7,4 +7,11 @@
       </a>
     }
   </nav>
+
+  @if (menuUrl(); as url) {
+    <a class="nav-item nav-item-menu" [href]="url" target="_blank" rel="noopener">
+      <span class="nav-icon">👁️</span>
+      <span class="nav-label">Ver menú</span>
+    </a>
+  }
 </aside>

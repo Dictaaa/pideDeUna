@@ -1,4 +1,6 @@
 .sidebar {
+  display: flex;
+  flex-direction: column;
   position: absolute;
   top: 0;
   left: 0;
@@ -13,6 +15,11 @@
   box-shadow: 2px 0 14px rgba(0, 0, 0, 0.1);
   transform: translateX(0);
   transition: transform 0.2s ease;
+}
+.nav-item-menu {
+  margin-top: auto; // lo empuja al fondo, sin importar cuántos ítems haya arriba
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
 }
 .sidebar.closed {
   transform: translateX(-100%);

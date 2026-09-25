@@ -21,6 +21,7 @@
           <th>Mesas</th>
           <th>Usuarios</th>
           <th>Sucursales</th>
+          <th>Pedidos/mes</th>
           <th>Almacenamiento</th>
           <th>Estado</th>
           <th></th>
@@ -35,6 +36,7 @@
             <td class="cell-muted">{{ plan.maxTables ?? 'Sin límite' }}</td>
             <td class="cell-muted">{{ plan.maxUsers ?? 'Sin límite' }}</td>
             <td class="cell-muted">{{ plan.maxBranches ?? 'Sin límite' }}</td>
+            <td class="cell-muted">{{ plan.maxOrdersMonthly ?? 'Sin límite' }}</td>
             <td class="cell-muted">{{ plan.storageQuotaMb }} MB</td>
             <td>
               <span class="badge" [class.badge-off]="!plan.isActive">
@@ -98,6 +100,11 @@
         <input type="number" min="0" [ngModel]="form().maxBranches" (ngModelChange)="updateField('maxBranches', $event)" name="maxBranches" />
       </label>
     </div>
+
+    <label class="field">
+      <span>Pedidos por mes (vacío = sin límite)</span>
+      <input type="number" min="0" [ngModel]="form().maxOrdersMonthly" (ngModelChange)="updateField('maxOrdersMonthly', $event)" name="maxOrdersMonthly" />
+    </label>
 
     <label class="field">
       <span>Cupo de almacenamiento (MB) — fotos y videos del menú</span>

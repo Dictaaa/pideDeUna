@@ -21,7 +21,7 @@ export interface CompanyDetail {
   company: Company;
   restaurants: Restaurant[];
   subscription: Subscription | null;
-  usage: { products: number; tables: number; users: number; branches: number; storageMb: number };
+  usage: { products: number; tables: number; users: number; branches: number; ordersMonthly: number; storageMb: number };
   users: User[];
 }
 

@@ -18,6 +18,7 @@ interface PlanFormValue {
   maxTables: number | null;
   maxUsers: number | null;
   maxBranches: number | null;
+  maxOrdersMonthly: number | null;
   storageQuotaMb: number;
 }
 
@@ -29,6 +30,7 @@ const EMPTY_FORM: PlanFormValue = {
   maxTables: null,
   maxUsers: null,
   maxBranches: null,
+  maxOrdersMonthly: null,
   storageQuotaMb: 200,
 };
 
@@ -83,6 +85,7 @@ export class Plans {
       maxTables: plan.maxTables,
       maxUsers: plan.maxUsers,
       maxBranches: plan.maxBranches,
+      maxOrdersMonthly: plan.maxOrdersMonthly,
       storageQuotaMb: plan.storageQuotaMb,
     });
     this.errorMessage.set(null);

@@ -1,7 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
 import { CompanyService } from '../../../../core/services/company.service';
 import { Company, CompanyUsage } from '../../../../core/models/company.model';
 import { Restaurant } from '../../../../core/models/restaurant.model';
@@ -65,18 +64,26 @@ export class Branches {
 
   reload(): void {
     this.loading.set(true);
-    forkJoin({
-      company: this.companyService.getDetail(this.companySlug),
-      restaurants: this.companyService.listRestaurants(this.companySlug),
-      usage: this.companyService.getUsage(this.companySlug),
-    }).subscribe({
-      next: (res) => {
-        this.company.set(res.company);
-        this.restaurants.set(res.restaurants);
-        this.usage.set(res.usage);
+    // Antes esto era un forkJoin de las 3 — todo o nada. Si getUsage()
+    // fallaba (compañías viejas sin suscripción sana, por ejemplo),
+    // tapaba a restaurants() aunque esa sí hubiera llegado bien. Ahora
+    // van por separado: cada una se pinta con lo que tenga, sin que
+    // una tumbe a las otras.
+    this.companyService.getDetail(this.companySlug).subscribe({
+      next: (company) => this.company.set(company),
+    });
+
+    this.companyService.listRestaurants(this.companySlug).subscribe({
+      next: (restaurants) => {
+        this.restaurants.set(restaurants);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
+    });
+
+    this.companyService.getUsage(this.companySlug).subscribe({
+      next: (usage) => this.usage.set(usage),
+      error: (err) => console.error('[Branches] No se pudo cargar el uso del plan:', err),
     });
   }
 

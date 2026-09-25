@@ -1,6 +1,7 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { CompanyService } from '../../services/company.service';
 import { RoleCode } from '../../models/common.model';
 
 interface NavItem {
@@ -21,6 +22,7 @@ const ADMIN_ROLES: RoleCode[] = ['RESTAURANT_ADMIN', 'SUPER_ADMIN'];
 })
 export class Sidebar {
   readonly auth = inject(AuthService);
+  private companyService = inject(CompanyService);
 
   // companySlug siempre está disponible (Shell vive en /admin/:companySlug).
   // branchSlug es null mientras estés en una página de COMPAÑÍA (ej.
@@ -30,6 +32,27 @@ export class Sidebar {
   branchSlug = input<string | null>(null);
   isOpen = input<boolean>(true);
   itemSelected = output<void>();
+
+  // Si no hay sucursal activa (página de compañía), "Ver menú" apunta a
+  // la sucursal default — se busca solo cuando hace falta.
+  private defaultBranchSlug = signal<string | null>(null);
+
+  constructor() {
+    effect(() => {
+      const c = this.companySlug();
+      if (this.branchSlug()) return; // ya hay sucursal activa, no hace falta buscar la default
+      this.companyService.listRestaurants(c).subscribe((list) => {
+        const def = list.find((r) => r.isDefault) ?? list[0];
+        this.defaultBranchSlug.set(def?.slug ?? null);
+      });
+    });
+  }
+
+  /** null solo si de verdad no hay ninguna sucursal creada todavía. */
+  menuUrl = computed<string | null>(() => {
+    const b = this.branchSlug() ?? this.defaultBranchSlug();
+    return b ? `/${this.companySlug()}/${b}` : null;
+  });
 
   // Nivel COMPAÑÍA — no piden sucursal, siempre visibles si el rol calza.
   private companyItems = computed<NavItem[]>(() => {

@@ -21,6 +21,7 @@ const USAGE_ROWS: UsageRow[] = [
   { key: 'tables', label: 'Mesas', icon: '🪑' },
   { key: 'users', label: 'Usuarios', icon: '👥' },
   { key: 'branches', label: 'Sucursales', icon: '🏬' },
+  { key: 'ordersMonthly', label: 'Pedidos este mes', icon: '🧾' },
   { key: 'storageMb', label: 'Almacenamiento (MB)', icon: '📦' },
 ];
 
