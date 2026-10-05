@@ -69,6 +69,32 @@
       </span>
     </p>
 
+        <div class="field">
+      <span>Fondo de la página pública (imagen o video, opcional)</span>
+      @if (backgroundError(); as bErr) {
+        <div class="form-error" style="margin-bottom: 14px;">{{ bErr }}</div>
+      }
+      @if (backgroundUrl()) {
+        <div class="bg-preview">
+          @if (backgroundType() === 'video') {
+            <video [src]="backgroundUrl()" muted loop autoplay playsinline></video>
+          } @else {
+            <img [src]="backgroundUrl()" alt="" />
+          }
+        </div>
+      }
+      <label class="btn-secondary logo-upload-btn">
+        {{ uploadingBackground() ? 'Subiendo…' : backgroundUrl() ? 'Cambiar fondo' : 'Subir fondo' }}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+          (change)="onBackgroundSelected($event)"
+          [disabled]="uploadingBackground()"
+          hidden
+        />
+      </label>
+    </div>
+
     <button type="button" class="btn-primary" [disabled]="savingBranding()" (click)="saveBranding()">
       {{ savingBranding() ? 'Guardando…' : brandingSaved() ? '¡Guardado!' : 'Guardar marca' }}
     </button>
@@ -121,6 +147,34 @@
       {{ savingSettings() ? 'Guardando…' : settingsSaved() ? '¡Guardado!' : 'Guardar impuesto y propina' }}
     </button>
     }
+  </section>
+    <section class="section">
+    <h2>Redes sociales</h2>
+    <p class="section-sub">Se muestran como botones en la página pública de tu compañía.</p>
+
+    <label class="field">
+      <span>Instagram (link completo)</span>
+      <input type="url" placeholder="https://instagram.com/tu_restaurante" [ngModel]="instagramUrl()" (ngModelChange)="instagramUrl.set($event)" name="instagramUrl" />
+    </label>
+
+    <label class="field">
+      <span>Facebook (link completo)</span>
+      <input type="url" placeholder="https://facebook.com/tu_restaurante" [ngModel]="facebookUrl()" (ngModelChange)="facebookUrl.set($event)" name="facebookUrl" />
+    </label>
+
+    <label class="field">
+      <span>WhatsApp (solo el número, con indicativo de país)</span>
+      <input type="text" placeholder="573001234567" [ngModel]="whatsappNumber()" (ngModelChange)="whatsappNumber.set($event)" name="whatsappNumber" />
+    </label>
+
+    <label class="field">
+      <span>TikTok (link completo)</span>
+      <input type="url" placeholder="https://tiktok.com/@tu_restaurante" [ngModel]="tiktokUrl()" (ngModelChange)="tiktokUrl.set($event)" name="tiktokUrl" />
+    </label>
+
+    <button type="button" class="btn-primary" [disabled]="savingSocial()" (click)="saveSocial()">
+      {{ savingSocial() ? 'Guardando…' : socialSaved() ? '¡Guardado!' : 'Guardar redes sociales' }}
+    </button>
   </section>
   }
 </div>

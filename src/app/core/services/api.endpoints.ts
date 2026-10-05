@@ -62,6 +62,7 @@ export const API = {
     STORAGE_USAGE: (companySlug: string) => `${BASE}/${companySlug}/storage-usage`,
     USAGE: (companySlug: string) => `${BASE}/${companySlug}/usage`,
     CHANGE_PLAN: (companySlug: string) => `${BASE}/${companySlug}/subscription/change-plan`,
+    UPLOAD_BACKGROUND: (companySlug: string) => `${BASE}/${companySlug}/background`,
   },
 
   // ── Sucursales (gestión desde la compañía) ────────────────

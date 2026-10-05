@@ -1,1 +1,95 @@
-<p>branch-picker works!</p>
+@if (loading()) {
+  <div class="state-message">Cargando…</div>
+} @else if (loadError()) {
+  <div class="state-message error">{{ loadError() }}</div>
+} @else if (company(); as c) {
+  <section class="hero" [class.has-background]="!!c.backgroundUrl">
+    @if (c.backgroundUrl) {
+      <div class="hero__media">
+        @if (c.backgroundType === 'video') {
+  <video
+    [src]="c.backgroundUrl"
+    autoplay
+    muted
+    loop
+    playsinline
+    preload="auto"
+    (loadeddata)="onVideoLoaded($event)"
+  ></video>
+} @else {
+  <img [src]="c.backgroundUrl" alt="" />
+}
+      </div>
+      <div class="hero__shade"></div>
+    }
+
+    <div class="hero__content">
+      <header class="company-hero">
+        @if (c.logoUrl) {
+          <img class="company-logo" [src]="c.logoUrl" [alt]="c.name" />
+        } @else {
+          <div class="company-logo-mark">{{ c.name.charAt(0) }}</div>
+        }
+        <h1 class="company-name">{{ c.name }}</h1>
+      </header>
+
+      <div class="company-actions">
+        @if (c.restaurants.length === 1) {
+          <a class="action-btn action-btn-primary" [routerLink]="['/', companySlug, c.restaurants[0].slug]">
+            Ver menú
+          </a>
+        } @else {
+          <button type="button" class="action-btn action-btn-primary" (click)="toggleLocations()">
+            Ver menú
+          </button>
+          <button type="button" class="action-btn" (click)="toggleLocations()">
+            Ver ubicaciones
+          </button>
+        }
+      </div>
+
+      @if (showingLocations() && c.restaurants.length > 1) {
+        <div class="locations-list">
+          @for (r of c.restaurants; track r.id) {
+            <a class="location-card" [routerLink]="['/', companySlug, r.slug]">
+              @if (r.coverUrl) {
+                <img class="location-cover" [src]="r.coverUrl" alt="" />
+              }
+              <div class="location-info">
+                <span class="location-name">{{ r.name }}</span>
+                @if (r.address || r.city) {
+                  <span class="location-address">{{ r.address }}{{ r.address && r.city ? ', ' : '' }}{{ r.city }}</span>
+                }
+              </div>
+            </a>
+          }
+        </div>
+      }
+
+      @if (hasSocialLinks(c)) {
+        <div class="social-links">
+          @if (c.instagramUrl) {
+            <a [href]="c.instagramUrl" target="_blank" rel="noopener" class="social-btn" aria-label="Instagram">
+              <i class="fa-brands fa-instagram"></i>
+            </a>
+          }
+          @if (c.facebookUrl) {
+            <a [href]="c.facebookUrl" target="_blank" rel="noopener" class="social-btn" aria-label="Facebook">
+              <i class="fa-brands fa-facebook"></i>
+            </a>
+          }
+          @if (c.whatsappNumber) {
+            <a [href]="whatsappLink(c.whatsappNumber)" target="_blank" rel="noopener" class="social-btn" aria-label="WhatsApp">
+              <i class="fa-brands fa-whatsapp"></i>
+            </a>
+          }
+          @if (c.tiktokUrl) {
+            <a [href]="c.tiktokUrl" target="_blank" rel="noopener" class="social-btn" aria-label="TikTok">
+              <i class="fa-brands fa-tiktok"></i>
+            </a>
+          }
+        </div>
+      }
+    </div>
+  </section>
+}

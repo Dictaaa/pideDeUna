@@ -14,6 +14,12 @@ export interface Company {
   primaryColor: string;
   secondaryColor: string;
   fontFamily: FontFamily;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  whatsappNumber: string | null;
+  tiktokUrl: string | null;
+  backgroundType: 'image' | 'video' | null;
+backgroundUrl: string | null;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -111,6 +117,12 @@ export interface PublicCompanyInfo {
   primaryColor: string;
   secondaryColor: string;
   fontFamily: FontFamily;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  whatsappNumber: string | null;
+  tiktokUrl: string | null;
+  backgroundType: 'image' | 'video' | null;
+backgroundUrl: string | null;
   restaurants: {
     id: UUID;
     slug: string;

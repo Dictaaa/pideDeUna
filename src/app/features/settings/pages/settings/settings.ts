@@ -42,6 +42,18 @@ export class Settings {
   savingNit = signal(false);
   nitSaved = signal(false);
 
+  instagramUrl = signal('');
+  facebookUrl = signal('');
+  whatsappNumber = signal('');
+  tiktokUrl = signal('');
+  savingSocial = signal(false);
+  socialSaved = signal(false);
+
+  backgroundType = signal<'image' | 'video' | null>(null);
+  backgroundUrl = signal<string | null>(null);
+  uploadingBackground = signal(false);
+  backgroundError = signal<string | null>(null);
+
   uploadingLogo = signal(false);
   logoError = signal<string | null>(null);
 
@@ -61,6 +73,12 @@ export class Settings {
         this.secondaryColor.set(c.secondaryColor);
         this.fontFamily.set(c.fontFamily);
         this.nit.set(c.nit ?? '');
+        this.instagramUrl.set(c.instagramUrl ?? '');
+        this.facebookUrl.set(c.facebookUrl ?? '');
+        this.whatsappNumber.set(c.whatsappNumber ?? '');
+        this.tiktokUrl.set(c.tiktokUrl ?? '');
+        this.backgroundType.set(c.backgroundType);
+        this.backgroundUrl.set(c.backgroundUrl);
       },
     });
   }
@@ -172,6 +190,54 @@ export class Settings {
       error: (err) => {
         this.uploadingLogo.set(false);
         this.logoError.set(err?.error?.error || 'No se pudo subir el logo.');
+        input.value = '';
+      },
+    });
+  }
+
+    saveSocial(): void {
+    this.savingSocial.set(true);
+    this.errorMessage.set(null);
+
+    this.companyService
+      .update(this.companySlug, {
+        instagramUrl: this.instagramUrl().trim() || null,
+        facebookUrl: this.facebookUrl().trim() || null,
+        whatsappNumber: this.whatsappNumber().trim() || null,
+        tiktokUrl: this.tiktokUrl().trim() || null,
+      })
+      .subscribe({
+        next: (c) => {
+          this.company.set(c);
+          this.savingSocial.set(false);
+          this.socialSaved.set(true);
+          setTimeout(() => this.socialSaved.set(false), 1800);
+        },
+        error: (err) => {
+          this.savingSocial.set(false);
+          this.errorMessage.set(err?.error?.error || 'No se pudieron guardar las redes sociales.');
+        },
+      });
+  }
+
+    onBackgroundSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.uploadingBackground.set(true);
+    this.backgroundError.set(null);
+
+    this.companyService.uploadBackground(this.companySlug, file).subscribe({
+      next: (res) => {
+        this.backgroundType.set(res.backgroundType);
+        this.backgroundUrl.set(res.backgroundUrl);
+        this.uploadingBackground.set(false);
+        input.value = '';
+      },
+      error: (err) => {
+        this.uploadingBackground.set(false);
+        this.backgroundError.set(err?.error?.error || 'No se pudo subir el fondo.');
         input.value = '';
       },
     });

@@ -18,9 +18,9 @@ export class CompanyService {
     return this.http.get<PublicCompanyInfo>(API.COMPANY.PUBLIC_INFO(companySlug));
   }
 
-  update(companySlug: string, patch: Partial<Pick<Company, 'name' | 'nit' | 'primaryColor' | 'secondaryColor' | 'fontFamily'>>): Observable<Company> {
-    return this.http.patch<Company>(API.COMPANY.UPDATE(companySlug), patch);
-  }
+  update(companySlug: string, patch: Partial<Pick<Company, 'name' | 'nit' | 'primaryColor' | 'secondaryColor' | 'fontFamily' | 'instagramUrl' | 'facebookUrl' | 'whatsappNumber' | 'tiktokUrl'>>): Observable<Company> {
+  return this.http.patch<Company>(API.COMPANY.UPDATE(companySlug), patch);
+}
 
   updateSettings(companySlug: string, patch: { taxLabel?: string; taxRate?: number; tipRate?: number; allowTips?: boolean }): Observable<unknown> {
     return this.http.patch(API.COMPANY.UPDATE_SETTINGS(companySlug), patch);
@@ -35,6 +35,15 @@ export class CompanyService {
     formData.append('file', file);
     return this.http.post<{ logoUrl: string }>(API.COMPANY.UPLOAD_LOGO(companySlug), formData);
   }
+
+  uploadBackground(companySlug: string, file: File): Observable<{ backgroundType: 'image' | 'video'; backgroundUrl: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return this.http.post<{ backgroundType: 'image' | 'video'; backgroundUrl: string }>(
+    API.COMPANY.UPLOAD_LOGO(companySlug).replace(/logo$/, 'background'),
+    formData
+  );
+}
 
   getStorageUsage(companySlug: string): Observable<StorageUsage> {
     return this.http.get<StorageUsage>(API.COMPANY.STORAGE_USAGE(companySlug));
