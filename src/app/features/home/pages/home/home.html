@@ -1,41 +1,105 @@
 <div class="home">
-  <!-- ── Barra superior ── -->
-  <header class="home-nav">
-    <div class="home-nav-inner">
-      <div class="home-brand">
-        <div class="home-brand-mark">P</div>
-        <span>PidaDeUna</span>
+  <div class="noise"></div>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <div class="logo">
+        <div class="logo-icon">P</div>
+        <span>Pide<b>DeUna</b></span>
       </div>
-      <nav class="home-nav-actions">
-        <a routerLink="/login" class="nav-link">Iniciar sesión</a>
-        <a [href]="whatsappUrl" target="_blank" rel="noopener" class="btn-nav-primary">Habla con nosotros</a>
+      <nav class="nav-links">
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#funciones">Funciones</a>
+        <a href="#planes">Planes</a>
+        <a href="#contacto">Contacto</a>
       </nav>
+      <div class="nav-actions">
+        <a routerLink="/login" class="nav-link">Iniciar sesión</a>
+        <a [href]="whatsappUrl" target="_blank" rel="noopener" class="nav-btn">Prueba 14 días gratis</a>
+      </div>
     </div>
   </header>
 
-  <!-- ── Hero ── -->
-  <section class="hero">
-    <div class="hero-inner">
-      <h1>El menú de tu restaurante, sin filas de espera ni cartas manchadas.</h1>
-      <p class="hero-sub">
-        QR en cada mesa, pedidos que llegan directo a cocina, y un panel para administrar todo —
-        categorías, productos, mesas, usuarios y ventas — desde un solo lugar.
+   <section class="hero">
+    <div class="hero-gradient"></div>
+    <div class="hero-copy">
+      <div class="eyebrow">MENÚ DIGITAL · PEDIDOS · RESTAURANTES</div>
+      <h1>Tu restaurante.<br /><span>Una nueva experiencia.</span></h1>
+      <p class="hero-description">
+        PideDeUna convierte el menú de tu restaurante en una experiencia digital. Tu cliente escanea, explora y
+        pide directo desde su celular — y a ti te llega listo en cocina.
       </p>
       <div class="hero-actions">
-        <a [href]="whatsappUrl" target="_blank" rel="noopener" class="btn-hero-primary">Empieza gratis 14 días</a>
-        <a routerLink="/login" class="btn-hero-secondary">Ya tengo cuenta</a>
+        <a [href]="whatsappUrl" target="_blank" rel="noopener" class="primary-btn">Comenzar ahora <span>→</span></a>
+        <a href="#como-funciona" class="secondary-link">Descubre cómo funciona ↓</a>
       </div>
-      <p class="hero-note">Sin tarjeta para empezar. Cancela cuando quieras.</p>
+    </div>
+
+    <div class="hero-3d">
+      <canvas #webgl class="webgl-canvas"></canvas>
+    </div>
+
+    <div class="float-card card-one">
+      <strong>🍽 Menú digital</strong>
+      <small>Fotos · Videos · Categorías</small>
+    </div>
+    <div class="float-card card-two">
+      <strong>⚡ Pedido recibido</strong>
+      <small>Mesa 12 · 2 productos</small>
+    </div>
+
+    <div class="scroll-indicator">
+      <div class="scroll-line"></div>
+      SCROLL PARA EXPLORAR
     </div>
   </section>
 
-  <!-- ── Qué es PideDeUna ── -->
-  <section class="section features-section">
-    <h2 class="section-title">Todo lo que necesita tu restaurante para operar por QR</h2>
-    <div class="features-grid">
-      @for (f of features; track f.title) {
-        <div class="feature-card">
-          <span class="feature-icon">{{ f.icon }}</span>
+  <section class="story" id="como-funciona">
+    <div class="story-sticky">
+      <div class="story-content">
+        <div class="section-label reveal">CÓMO FUNCIONA</div>
+        <h2 class="reveal">Del QR <span>a tu mesa.</span></h2>
+        <p class="reveal">Una experiencia sencilla para tus clientes y una herramienta poderosa para administrar tu restaurante.</p>
+
+        <div class="steps">
+          @for (s of steps; track s.n; let i = $index) {
+            <div class="step reveal" [style.transition-delay.ms]="i * 90">
+              <div class="step-number">{{ s.n }}</div>
+              <div>
+                <h3>{{ s.title }}</h3>
+                <p>{{ s.desc }}</p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="phone-area reveal">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="app-header">PideDeUna</div>
+            <div class="food-photo"></div>
+            <div class="menu-info">
+              <h3>Bowl de la casa</h3>
+              <p>Arroz, pollo, aguacate, vegetales y salsa especial.</p>
+              <div class="price">$22.900</div>
+              <button class="order-btn" type="button">Agregar al pedido</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="funciones">
+    <div class="features-title reveal">
+      <div class="section-label">TODO EN UN SOLO LUGAR</div>
+      <h2>Más que un menú.<br /><span>Tu restaurante digital.</span></h2>
+    </div>
+    <div class="feature-grid">
+      @for (f of features; track f.title; let i = $index) {
+        <div class="feature reveal" [style.transition-delay.ms]="i * 80">
+          <div class="feature-icon">{{ f.icon }}</div>
           <h3>{{ f.title }}</h3>
           <p>{{ f.description }}</p>
         </div>
@@ -43,10 +107,22 @@
     </div>
   </section>
 
-  <!-- ── Planes ── -->
-  <section class="section plans-section" id="planes">
-    <h2 class="section-title">Un plan para cada tamaño de restaurante</h2>
-    <p class="section-sub">Todos incluyen 14 días de prueba. Ninguno te pide tarjeta para empezar.</p>
+  <section class="qr-section" id="qr">
+    <div class="qr-copy reveal">
+      <div class="section-label">UN QR.</div>
+      <h2>Tu menú <span>completo.</span></h2>
+      <p>Un solo código QR puede convertirse en la puerta de entrada digital de todo tu restaurante.</p>
+      <a [href]="whatsappUrl" target="_blank" rel="noopener" class="primary-btn">Crear mi restaurante →</a>
+    </div>
+    <div class="qr reveal">
+      <div class="qr-pattern"></div>
+    </div>
+  </section>
+
+  <section class="plans-section" id="planes">
+    <div class="section-label center reveal">PLANES</div>
+    <h2 class="section-title reveal">Un plan para cada tamaño de restaurante</h2>
+    <p class="section-sub reveal">Todos incluyen 14 días de prueba. Ninguno te pide tarjeta para empezar.</p>
 
     @if (loadingPlans()) {
       <div class="plans-grid">
@@ -60,14 +136,13 @@
       </div>
     } @else {
       <div class="plans-grid">
-        @for (plan of plans(); track plan.id) {
-          <div class="plan-card" [class.highlight]="plan.code === 'PRO'">
+        @for (plan of plans(); track plan.id; let i = $index) {
+          <div class="plan-card reveal" [class.highlight]="plan.code === 'PRO'" [style.transition-delay.ms]="i * 90">
             @if (plan.code === 'PRO') {
               <span class="plan-badge">Más elegido</span>
             }
             <span class="plan-name">{{ plan.name }}</span>
             <span class="plan-price">{{ '$' + (+plan.priceMonthly | number: '1.0-0') }}<small>/mes</small></span>
-
             <ul class="plan-limits">
               <li>{{ plan.maxProducts ?? 'Sin límite' }} productos</li>
               <li>{{ plan.maxTables ?? 'Sin límite' }} mesas</li>
@@ -75,7 +150,6 @@
               <li>{{ plan.maxBranches ?? 'Sin límite' }} sucursales</li>
               <li>{{ plan.storageQuotaMb }} MB de almacenamiento</li>
             </ul>
-
             <a [href]="whatsappUrl" target="_blank" rel="noopener" class="btn-plan">Comenzar con {{ plan.name }}</a>
           </div>
         }
@@ -83,21 +157,15 @@
     }
   </section>
 
-  <!-- ── Contacto ── -->
-  <section class="section contact-section" id="contacto">
-    <h2 class="section-title">¿Tienes preguntas?</h2>
-    <p class="section-sub">Escríbenos, te respondemos rápido.</p>
-    <div class="contact-grid">
-      <a [href]="whatsappUrl" target="_blank" rel="noopener" class="contact-card">
-        <span class="contact-icon">💬</span>
-        <span class="contact-label">WhatsApp</span>
-        <span class="contact-value">+57 315 478 9845</span>
-      </a>
-    </div>
+  <section class="cta reveal" id="contacto">
+    <small>14 DÍAS DE PRUEBA GRATIS</small>
+    <h2>Menos filas.<br /><span>Más ventas.</span></h2>
+    <p>Lleva tu restaurante al siguiente nivel con PideDeUna.</p>
+    <a [href]="whatsappUrl" target="_blank" rel="noopener" class="primary-btn">Crear mi cuenta →</a>
   </section>
 
-  <!-- ── Footer ── -->
-  <footer class="home-footer">
-    <span>Pida de una</span>
+  <footer class="footer">
+    <div>© 2026 PideDeUna</div>
+    <div>Menús digitales para restaurantes</div>
   </footer>
 </div>
