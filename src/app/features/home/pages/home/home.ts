@@ -43,10 +43,10 @@ const FEATURES: FeatureBlock[] = [
 ];
 
 const STEPS: StepBlock[] = [
-  { n: '01', title: 'Crea tu menú', desc: 'Agrega productos, precios, fotos y video en minutos.' },
-  { n: '02', title: 'Pega tu QR', desc: 'En cada mesa, en la barra, donde haga falta.' },
-  { n: '03', title: 'El cliente explora', desc: 'Ve fotos, precios y arma su pedido desde el celular.' },
-  { n: '04', title: 'Te llega a cocina', desc: 'El pedido aparece al instante, sin que nadie tenga que ir y venir.' },
+  { n: '1', title: 'Crea tu menú', desc: 'Agrega productos, precios, fotos y video en minutos.' },
+  { n: '2', title: 'Pega tu QR', desc: 'En cada mesa, en la barra, donde haga falta.' },
+  { n: '3', title: 'El cliente explora', desc: 'Ve fotos, precios y arma su pedido desde el celular.' },
+  { n: '4', title: 'Te llega a cocina', desc: 'El pedido aparece al instante, sin que nadie tenga que ir y venir.' },
 ];
 
 // No hay registro público — el equipo de PideDeUna crea cada
